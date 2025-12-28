@@ -1,5 +1,9 @@
 import 'package:dentist_ms/core/constants/app_colors.dart';
+import 'package:dentist_ms/core/constants/app_routes.dart';
 import 'package:dentist_ms/core/constants/app_text_styles.dart';
+import 'package:dentist_ms/features/auth/bloc/auth_bloc.dart';
+import 'package:dentist_ms/features/auth/bloc/auth_event.dart';
+import 'package:dentist_ms/features/auth/bloc/auth_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -26,6 +30,58 @@ class AppNavbar extends StatefulWidget {
 
 class _AppNavbarState extends State<AppNavbar> {
   bool _isCollapsed = false;
+
+  void _showSignOutDialog() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1E2530),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Déconnexion',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: const Text(
+          'Êtes-vous sûr de vouloir vous déconnecter ? ',
+          style: TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              'Annuler',
+              style: TextStyle(color: Colors.white.withOpacity(0.7)),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              context.read<AuthBloc>().add(AuthSignOutRequested());
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.login,
+                (route) => false,
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'Déconnexion',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildNavItem(
     String title,
@@ -91,6 +147,88 @@ class _AppNavbarState extends State<AppNavbar> {
     );
   }
 
+  Widget _buildProfileSettingsButton(AuthState authState) {
+    final user = authState.user;
+    final selected = widget.selectedIndex == 4;
+
+    if (!authState.isAuthenticated || user == null) {
+      return const SizedBox.shrink();
+    }
+
+    return InkWell(
+      onTap: () => widget.onItemSelected(4),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: selected ? BoxDecoration(
+          color: AppColors.white.withOpacity(0.1),
+          border: Border.all(color: AppColors.cardBlue),
+          borderRadius: BorderRadius.circular(14),
+        ) : null,
+        child: Row(
+          children: [
+            // Avatar
+            CircleAvatar(
+              radius: 12,
+              backgroundColor: const Color(0xFF4F7EFF),
+              child: Text(
+                user.firstName[0].toUpperCase(),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+
+            if (!_isCollapsed) ...[
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.fullName,
+                      style: AppTextStyles.body1.copyWith(
+                        color: selected ? Colors.white : null,
+                        fontSize: 13,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      user.role.name.toUpperCase(),
+                      style: TextStyle(
+                        color: selected
+                            ? Colors.white.withOpacity(0.7)
+                            : Colors.grey,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Logout icon button
+              IconButton(
+                icon: const Icon(
+                  Icons.logout,
+                  size: 18,
+                  color: Color(0xFFDC2626),
+                ),
+                onPressed: _showSignOutDialog,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: 'Déconnexion',
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -108,154 +246,155 @@ class _AppNavbarState extends State<AppNavbar> {
       expandedWidth = 150;
     }
 
-    // Use BlocBuilder to read live patient count; fall back to widget.patientsN if bloc state not available.
-    return BlocBuilder<PatientBloc, PatientState>(
-      builder: (context, state) {
-        int patientsCountFallback = 0;
-        int patientsCount = patientsCountFallback;
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, authState) {
+        return BlocBuilder<PatientBloc, PatientState>(
+          builder: (context, patientState) {
+            int patientsCount = 0;
 
-        if (state is PatientsLoadSuccess) {
-          patientsCount = state.patients.length;
-        } else {
-          // keep fallback (widget.patientsN) while loading or on other states
-          patientsCount = patientsCountFallback;
-        }
+            if (patientState is PatientsLoadSuccess) {
+              patientsCount = patientState.patients.length;
+            }
 
-        final List<Map<String, String>> navItems = [
-          {"title": "Tableau de bord", "icon": "assets/icons/dashboard.svg"},
-          {
-            "title": "Patientes",
-            "icon": "assets/icons/patients.svg",
-            "counter": patientsCount.toString(),
-          },
-          {
-            "title": "Rendez-vous",
-            "icon": "assets/icons/appointments.svg",
-            "counter": widget.appointmentsN.toString(),
-          },
-          {
-            "title": "Facturation",
-            "icon": "assets/icons/billing.svg",
-            "counter": widget.billingsN.toString(),
-          },
-        ];
+            final List<Map<String, String>> navItems = [
+              {
+                "title": "Tableau de bord",
+                "icon": "assets/icons/dashboard.svg",
+              },
+              {
+                "title": "Patientes",
+                "icon": "assets/icons/patients.svg",
+                "counter": patientsCount.toString(),
+              },
+              {
+                "title": "Rendez-vous",
+                "icon": "assets/icons/appointments.svg",
+                "counter": widget.appointmentsN.toString(),
+              },
+              {
+                "title": "Facturation",
+                "icon": "assets/icons/billing.svg",
+                "counter": widget.billingsN.toString(),
+              },
+            ];
 
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          width: _isCollapsed ? 80 : expandedWidth,
-          decoration: AppColors.navBarBackground,
-          child: Column(
-            crossAxisAlignment: _isCollapsed
-                ? CrossAxisAlignment.center
-                : CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(width: 1, color: AppColors.azure_2),
-                  ),
-                ),
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (!_isCollapsed) ...[
-                          Container(
-                            decoration: AppColors.selectedPage.copyWith(
-                              borderRadius: BorderRadius.circular(14),
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              width: _isCollapsed ? 80 : expandedWidth,
+              decoration: AppColors.navBarBackground,
+              child: Column(
+                crossAxisAlignment: _isCollapsed
+                    ? CrossAxisAlignment.center
+                    : CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(width: 1, color: AppColors.azure_2),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (!_isCollapsed) ...[
+                            Container(
+                              decoration: AppColors.selectedPage.copyWith(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              padding: const EdgeInsets.all(8),
+                              child: SvgPicture.asset(
+                                "assets/icons/pfp.svg",
+                                width: 25,
+                                height: 25,
+                              ),
                             ),
-                            padding: EdgeInsets.all(8),
-                            child: SvgPicture.asset(
-                              "assets/icons/pfp.svg",
-                              width: 25,
-                              height: 25,
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text(
-                                  'Dental clinic',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Dental clinic',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Clinic Management',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 12,
+                                    ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          Container(
+                            decoration: _isCollapsed
+                                ? BoxDecoration(
+                                    border: Border.all(color: AppColors.azure),
+                                    borderRadius: BorderRadius.circular(10),
+                                  )
+                                : null,
+                            child: IconButton(
+                              icon: AnimatedRotation(
+                                duration: const Duration(milliseconds: 200),
+                                turns: _isCollapsed ? 0.5 : 0,
+                                child: const Icon(
+                                  Icons.chevron_left,
+                                  size: 28,
+                                  color: Colors.white,
                                 ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Clinic Management',
-                                  style: TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 12,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _isCollapsed = !_isCollapsed;
+                                });
+                              },
                             ),
                           ),
                         ],
-
-                        Container(
-                          decoration: _isCollapsed
-                              ? BoxDecoration(
-                                  border: Border.all(color: AppColors.azure),
-                                  borderRadius: BorderRadius.circular(10),
-                                )
-                              : null,
-                          child: IconButton(
-                            icon: AnimatedRotation(
-                              duration: const Duration(milliseconds: 200),
-                              turns: _isCollapsed ? 0.5 : 0,
-                              child: const Icon(
-                                Icons.chevron_left,
-                                size: 28,
-                                color: Colors.white,
-                              ),
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _isCollapsed = !_isCollapsed;
-                              });
-                            },
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ),
 
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Column(
-                    children: [
-                      SizedBox(height: 40),
-                      ...List.generate(
-                        navItems.length,
-                        (index) => _buildNavItem(
-                          navItems[index]["title"]!,
-                          navItems[index]["icon"]!,
-                          index,
-                          counter: navItems[index]["counter"] ?? "0",
-                        ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 40),
+                          ...List.generate(
+                            navItems.length,
+                            (index) => _buildNavItem(
+                              navItems[index]["title"]!,
+                              navItems[index]["icon"]!,
+                              index,
+                              counter: navItems[index]["counter"] ?? "0",
+                            ),
+                          ),
+                          const Spacer(),
+
+                          // Profile/Settings button at bottom
+                          _buildProfileSettingsButton(authState),
+                          const SizedBox(height: 8),
+                        ],
                       ),
-                      const Spacer(),
-                      // Settings at bottom
-                      _buildNavItem("Paramètres", "assets/icons/settings.svg", 4),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
