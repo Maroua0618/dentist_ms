@@ -16,6 +16,7 @@ class _SettingsPageState extends State<SettingsPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  final ClinicControllers clinicControllers = ClinicControllers();
   final ProfilControllers profilControllers = ProfilControllers();
   final SecurityControllers securityControllers = SecurityControllers();
 
