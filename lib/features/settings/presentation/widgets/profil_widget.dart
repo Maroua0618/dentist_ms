@@ -5,6 +5,10 @@ import 'package:dentist_ms/features/auth/bloc/auth_bloc.dart';
 import 'package:dentist_ms/features/auth/bloc/auth_state.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 
+Widget profil(BuildContext context, double width, double height, ProfilControllers controllers) {
+  return ProfilWidget(width: width, height: height, controllers: controllers);
+}
+
 class ProfilControllers {
   final TextEditingController firstNameController = TextEditingController();
   final TextEditingController lastNameController = TextEditingController();
@@ -241,6 +245,7 @@ Future<void> _handleUpdateProfile(BuildContext context, ProfilControllers contro
           backgroundColor: Colors.red,
         ),
       );
+      return;
     }
   }
 }
