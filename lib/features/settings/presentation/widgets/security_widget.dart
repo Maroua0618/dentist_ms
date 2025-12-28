@@ -1,58 +1,6 @@
-import 'package:dentist_ms/features/settings/bloc/setting_state.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dentist_ms/core/constants/app_text_styles.dart';
-import 'package:dentist_ms/features/settings/bloc/setting_bloc.dart';
-import 'package:dentist_ms/features/settings/bloc/setting_event.dart';
-
-Widget security(BuildContext context, double width, double height, SecurityControllers controllers){  
-  return BlocConsumer<SettingBloc, SettingState>(
-    listener: (context, state) {
-      // Handle password change success
-      if (state is SettingsLoadSuccess && controllers.currentPasswordController.text.isNotEmpty) {
-        _handleSuccess(context, controllers, 'Mot de passe changé avec succès!');
-      }
-      
-      // Handle errors
-      if (state is SettingsOperationFailure) {
-        _showErrorSnackBar(context, state.message);
-      }
-    },
-    builder: (context, state) {
-      final isLoading = state is SettingsLoadInProgress;
-      
-      return Card(
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: height * 0.02, horizontal: width * 0.03),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Changer le mot de passe", style: Theme.of(context).textTheme.titleLarge!),
-              SizedBox(height: height * 0.03),
-              
-              // Responsive layout for password fields and image
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth < 600) {
-                    return _buildVerticalLayout(controllers, width, height);
-                  } else {
-                    return _buildHorizontalLayout(controllers, width, height);
-                  }
-                },
-              ),
-              
-              SizedBox(height: height * 0.05),
-              
-              // Save button - always full width
-              _buildSaveButton(context, controllers, width, isLoading),
-            ],
-          ),
-        )
-      );
-    },
-  );
-}
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SecurityControllers {
   final TextEditingController currentPasswordController = TextEditingController();
