@@ -66,4 +66,6 @@ class AppTextStyles {
     fontWeight: FontWeight.normal,
     color: AppColors.textSecondary,
   );
+
+  static get bodyText => null;
 }

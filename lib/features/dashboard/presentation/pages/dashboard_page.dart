@@ -297,13 +297,10 @@ class _DashboardPageContentState extends State<_DashboardPageContent> {
                         final metrics = state.metrics;
                         return LayoutBuilder(
                           builder: (context, constraints) {
-                            final isTight = constraints.maxWidth < 980;
-                            return Wrap(
+                            return Row(
                               spacing: kGutter,
-                              runSpacing: kGutter,
                               children: [
-                                SizedBox(
-                                  width: _cardWidth(constraints, isTight),
+                                Expanded(
                                   child: MetricCard(
                                     color: kRevenueColor,
                                     icon: Icons.attach_money_rounded,
@@ -314,8 +311,7 @@ class _DashboardPageContentState extends State<_DashboardPageContent> {
                                     subNote: '', // Empty string - no trend
                                   ),
                                 ),
-                                SizedBox(
-                                  width: _cardWidth(constraints, isTight),
+                                Expanded(
                                   child: MetricCard(
                                     color: kPatientsColor,
                                     icon: Icons.people_alt_rounded,
@@ -325,8 +321,7 @@ class _DashboardPageContentState extends State<_DashboardPageContent> {
                                     subNote: '', // Empty string - no trend
                                   ),
                                 ),
-                                SizedBox(
-                                  width: _cardWidth(constraints, isTight),
+                                Expanded(
                                   child: MetricCard(
                                     color: kAppointmentsColor,
                                     icon: Icons.event_available_rounded,
@@ -336,8 +331,7 @@ class _DashboardPageContentState extends State<_DashboardPageContent> {
                                     subNote: '', // Empty string - no trend
                                   ),
                                 ),
-                                SizedBox(
-                                  width: _cardWidth(constraints, isTight),
+                                Expanded(
                                   child: MetricCard(
                                     color: kAvgRevColor,
                                     icon: Icons.bar_chart_rounded,
@@ -383,12 +377,6 @@ class _DashboardPageContentState extends State<_DashboardPageContent> {
     );
   }
 
-  double _cardWidth(BoxConstraints c, bool isTight) {
-    final max = c.maxWidth;
-    if (max >= 1120) return (max - (kGutter * 3)) / 4;
-    if (max >= 760) return (max - (kGutter * 2)) / 3;
-    return (max - kGutter) / 2;
-  }
 
   Widget _buildTabBody(double screenWidth, double screenHeight) {
     switch (currentTab) {
