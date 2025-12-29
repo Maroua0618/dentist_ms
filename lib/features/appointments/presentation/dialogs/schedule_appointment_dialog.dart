@@ -9,7 +9,9 @@ import '../../../patients/models/patient.dart';
 import '../../../billing/models/treatment.dart';
 
 class ScheduleAppointmentDialog extends StatefulWidget {
+  
   const ScheduleAppointmentDialog({super.key});
+  
 
   @override
   State<ScheduleAppointmentDialog> createState() =>

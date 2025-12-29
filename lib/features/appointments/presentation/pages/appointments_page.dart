@@ -233,38 +233,73 @@ class _AppointmentPageState extends State<AppointmentPage> {
 
   Widget _buildDualColumn(List<Appointment> all, List<Appointment> filtered, List<Appointment> todayApps,
       int confirmed, int pending, int cancelled, double width) {
-    return Column(
-      children: [
-        _buildHeader(all, filtered, todayApps, confirmed, pending, cancelled, width, false),
-        Expanded(
-          child: Row(
-            children: [
-              Container(
-                width: 300,
-                color: Colors.white,
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    _buildCalendarHeader(),
-                    const SizedBox(height: 16),
-                    Expanded(child: _buildCalendarGrid(all)),
-                    const SizedBox(height: 24),
-                    _buildQuickActions(),
-                  ],
-                ),
+    // Responsive: stack vertically if width <= 900
+    if (width <= 900) {
+      return Column(
+        children: [
+          _buildHeader(all, filtered, todayApps, confirmed, pending, cancelled, width, false),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        _buildCalendarHeader(),
+                        const SizedBox(height: 16),
+                        _buildCalendarGrid(all),
+                        const SizedBox(height: 24),
+                        _buildQuickActions(),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    color: const Color(0xFFF9FAFB),
+                    padding: const EdgeInsets.all(24),
+                    child: _buildAppointmentsList(todayApps),
+                  ),
+                ],
               ),
-              Expanded(
-                child: Container(
-                  color: const Color(0xFFF9FAFB),
-                  padding: const EdgeInsets.all(24),
-                  child: _buildAppointmentsList(todayApps),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ],
-    );
+        ],
+      );
+    } else {
+      return Column(
+        children: [
+          _buildHeader(all, filtered, todayApps, confirmed, pending, cancelled, width, false),
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 300,
+                  color: Colors.white,
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      _buildCalendarHeader(),
+                      const SizedBox(height: 16),
+                      Expanded(child: _buildCalendarGrid(all)),
+                      const SizedBox(height: 24),
+                      _buildQuickActions(),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    color: const Color(0xFFF9FAFB),
+                    padding: const EdgeInsets.all(24),
+                    child: _buildAppointmentsList(todayApps),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
   }
 
   Widget _buildHeader(List<Appointment> all, List<Appointment> filtered, List<Appointment> todayApps,
