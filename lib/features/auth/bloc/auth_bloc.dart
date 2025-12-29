@@ -15,6 +15,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthSignOutRequested>(_onSignOutRequested);
     on<AuthResetPasswordRequested>(_onResetPasswordRequested);
     on<AuthUserChanged>(_onUserChanged);
+    on<AuthUpdateProfile>(_onUpdateProfile);
+
 
     _authSubscription = _authRepository.authStateChanges.listen((user) {
       add(AuthUserChanged(user));
@@ -116,6 +118,29 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
+  Future<void> _onUpdateProfile(AuthUpdateProfile event, Emitter<AuthState> emit) async {
+    emit(state.copyWith(status: AuthStatus.loading));
+    
+    try {
+      // You need to add updateUser method to your AuthRepository
+      final updatedUser = await _authRepository.updateUser(event.updatedUser);
+      
+      emit(state.copyWith(
+        status: AuthStatus.authenticated,
+        user: updatedUser,
+        permissions: Permissions.fromRole(updatedUser.role),
+      ));
+      
+      // Show success (optional)
+      // You can handle this in the UI instead
+    } catch (e) {
+      emit(state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: 'Failed to update profile: $e',
+      ));
+    }
+  }
+  
   @override
   Future<void> close() {
     _authSubscription?.cancel();

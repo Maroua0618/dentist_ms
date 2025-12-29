@@ -2,18 +2,18 @@ import 'package:dentist_ms/features/settings/models/clinicInfo.dart';
 import 'package:flutter/material.dart';
 import 'package:dentist_ms/core/constants/app_text_styles.dart';
 
-Widget clinic(BuildContext context, double width, double height) {  
+Widget clinic(BuildContext context, double width, double height, ClinicControllers clinicControllers) {  
 
   final clinicInfo = ClinicInfo.defaultValues();
   final controllers = clinicInfo.toControllers();
   
   final readOnlyFields = {
-    'clinicName': true,           // Read-only
-    'registrationNumber': true,   // Read-only
-    'email': true,               // Editable
-    'phone': true,               // Editable
-    'address': true,             // Editable
-    'about': true,               // Editable
+    'clinicName': true,           
+    'registrationNumber': true,   
+    'email': true,               
+    'phone': true,               
+    'address': true,             
+    'about': true,             
   };
       
   return Column(
@@ -192,6 +192,75 @@ Widget clinic(BuildContext context, double width, double height) {
       ),
     ],
   );
+}
+
+class ClinicControllers {
+  final TextEditingController clinicNameController = TextEditingController();
+  final TextEditingController registrationNumberController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
+  final TextEditingController aboutController = TextEditingController();
+  final Map<String, List<TextEditingController>> workingHoursControllers = {};
+
+  // Method to update controllers with data
+  void updateControllersFromClinicData({
+    String? clinicName,
+    String? registrationNumber,
+    String? email,
+    String? phone,
+    String? address,
+    String? about,
+    Map<String, List<String>>? workingHours,
+  }) {
+
+    // Remove the _initialized check to allow updates
+    if (clinicName != null) {
+      clinicNameController.text = clinicName;
+    }
+    if (registrationNumber != null) {
+      registrationNumberController.text = registrationNumber;
+    }
+    if (email != null) {
+      emailController.text = email;
+    }
+    if (phone != null) {
+      phoneController.text = phone;
+    }
+    if (address != null) {
+      addressController.text = address;
+    }
+    if (about != null) {
+      aboutController.text = about;
+    }    
+    // Initialize working hours controllers with data if provided
+    if (workingHours != null) {
+      workingHours.forEach((day, times) {
+        if (workingHoursControllers.containsKey(day)) {
+          if (times.length >= 2) {
+            workingHoursControllers[day]![0].text = times[0];
+            workingHoursControllers[day]![1].text = times[1];
+          }
+        }
+      });
+    }
+  }
+
+  void dispose() {
+    clinicNameController.dispose();
+    registrationNumberController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    addressController.dispose();
+    aboutController.dispose();
+
+    // Dispose working hours controllers
+    workingHoursControllers.forEach((key, controllers) {
+      for (var controller in controllers) {
+        controller.dispose();
+      }
+    });
+  }
 }
 
 Widget _buildFieldHorizontal(

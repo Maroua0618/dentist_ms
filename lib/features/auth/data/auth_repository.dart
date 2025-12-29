@@ -6,6 +6,32 @@ class AuthRepository {
 
   AuthRepository(this._supabase);
 
+  Future<AppUser> updateUser(AppUser user) async {
+    try {
+      final supabase = Supabase.instance.client;
+      
+      await supabase.from('users').update({
+        'first_name': user.firstName,
+        'last_name': user.lastName,
+        'phone': user.phone,
+        'specialization': user.specialization,
+        'profile_photo_path': user.profilePhotoPath,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', user.id);
+      
+      // Return the updated user (fetch fresh from DB)
+      final response = await supabase
+        .from('users')
+        .select()
+        .eq('id', user.id)
+        .single();
+      
+      return AppUser.fromJson(response);
+    } catch (e) {
+      throw Exception('Failed to update user: $e');
+    }
+  }
+
   Future<AppUser> signIn(String email, String password) async {
     final response = await _supabase.auth.signInWithPassword(
       email: email,

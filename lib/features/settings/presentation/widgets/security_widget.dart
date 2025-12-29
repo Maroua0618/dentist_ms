@@ -67,7 +67,37 @@ Widget security(BuildContext context, double width, double height, SecurityContr
                       ),
                       Expanded(
                         flex: 2,
-                        child: Image.asset("assets/images/security.png"),
+                        child: Container(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Image.asset(
+                                "assets/images/security.png",
+                                width: width * 0.45,
+                                height: height * 0.35,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: width * 0.3,
+                                    height: height * 0.2,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[200],
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.security, size: 50, color: Colors.grey[400]),
+                                        SizedBox(height: 8),
+                                        Text("Security Image", style: TextStyle(color: Colors.grey[500])),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
                   ),
