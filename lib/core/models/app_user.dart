@@ -25,9 +25,10 @@ class AppUser extends Equatable {
   final String? phone;
   final String? profilePhotoPath;
   final DateTime? createdAt;
+  final DateTime? updatedAt; // Added for completeness
 
   const AppUser({
-    required this. id,
+    required this.id,
     required this.authId,
     required this.email,
     required this.firstName,
@@ -35,15 +36,46 @@ class AppUser extends Equatable {
     required this.role,
     required this.isActive,
     this.specialization,
-    this. phone,
+    this.phone,
     this.profilePhotoPath,
     this.createdAt,
+    this.updatedAt, // Added for completeness
   });
+
+  AppUser copyWith({
+    int? id,
+    String? authId,
+    String? email,
+    String? firstName,
+    String? lastName,
+    UserRole? role,
+    bool? isActive,
+    String? specialization,
+    String? phone,
+    String? profilePhotoPath,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return AppUser(
+      id: id ?? this.id,
+      authId: authId ?? this.authId,
+      email: email ?? this.email,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      role: role ?? this.role,
+      isActive: isActive ?? this.isActive,
+      specialization: specialization ?? this.specialization,
+      phone: phone ?? this.phone,
+      profilePhotoPath: profilePhotoPath ?? this.profilePhotoPath,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 
   String get fullName => '$firstName $lastName';
 
   bool get isDoctor => role == UserRole.doctor;
-  bool get isReceptionist => role == UserRole. receptionist;
+  bool get isReceptionist => role == UserRole.receptionist;
   bool get isAdmin => role == UserRole.admin;
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
@@ -61,6 +93,9 @@ class AppUser extends Equatable {
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at'])
           : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : null,
     );
   }
 
@@ -71,15 +106,16 @@ class AppUser extends Equatable {
         'first_name': firstName,
         'last_name': lastName,
         'role': role.name,
-        'is_active':  isActive,
+        'is_active': isActive,
         'specialization': specialization,
         'phone': phone,
         'profile_photo_path': profilePhotoPath,
-        'created_at':  createdAt?.toIso8601String(),
+        'created_at': createdAt?.toIso8601String(),
+        'updated_at': updatedAt?.toIso8601String(),
       };
 
   @override
-  List<Object? > get props => [
+  List<Object?> get props => [
         id,
         authId,
         email,
@@ -91,5 +127,6 @@ class AppUser extends Equatable {
         phone,
         profilePhotoPath,
         createdAt,
+        updatedAt,
       ];
 }
