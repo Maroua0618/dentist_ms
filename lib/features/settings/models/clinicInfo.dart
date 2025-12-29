@@ -20,11 +20,11 @@ class ClinicInfo {
   // Factory method for default values
   factory ClinicInfo.defaultValues() {
     return ClinicInfo(
-      clinicName: 'Nom de la clinique par défaut',
-      registrationNumber: '12345',
-      email: 'clinique@example.com',
-      phone: '+1234567890',
-      address: 'Adresse par défaut',
+      clinicName: 'Khalil clinique',
+      registrationNumber: '254847254',
+      email: 'Khalil_clinique@gmail.com',
+      phone: '077842584',
+      address: 'Ben Aknoun',
       about: 'Description de la clinique',
     );
   }

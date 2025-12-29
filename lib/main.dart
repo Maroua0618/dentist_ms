@@ -48,17 +48,19 @@ void main() async {
         RepositoryProvider<SupabasePatientRepository>(
           create: (_) => patientRepository,
         ),
+
+       
+       
       ],
       child: MultiBlocProvider(
         providers: [
-          // Auth BLoC - MUST be first
+
           BlocProvider<AuthBloc>(
-            create:  (context) => AuthBloc(
-              context. read<AuthRepository>(),
-            ).. add(AuthStarted()),
+            create: (context) => AuthBloc(
+              context.read<AuthRepository>(),
+            )..add(AuthStarted()),
           ),
 
-          // Feature BLoCs
           BlocProvider<PatientBloc>(
             create: (context) => PatientBloc(
               repository: context.read<SupabasePatientRepository>(),
@@ -69,4 +71,5 @@ void main() async {
       ),
     ),
   );
+
 }
