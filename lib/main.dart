@@ -59,30 +59,22 @@ void main() async {
           // Auth BLoC - MUST be first
           BlocProvider<AuthBloc>(
             create:  (context) => AuthBloc(
-              context. read<AuthRepository>(),
-            ).. add(AuthStarted()),
+              context.read<AuthRepository>(),
+            )..add(AuthStarted()),
           ),
-
           // Feature BLoCs
           BlocProvider<PatientBloc>(
             create: (context) => PatientBloc(
               repository: context.read<SupabasePatientRepository>(),
             ),
           ),
+          BlocProvider<AppointmentBloc>(
+            create: (context) => AppointmentBloc(repository: appointmentRepository),
+          ),
+          // Add other Blocs here as your application grows
         ],
         child: const DentistApp(),
       ),
-        BlocProvider<PatientBloc>(
-          // The repository is passed to the Bloc
-          create: (context) => PatientBloc(repository: patientRepository),
-        ),
-        BlocProvider<AppointmentBloc>(
-          create: (context) => AppointmentBloc(repository: appointmentRepository),
-        ),
-        // Add other Blocs here as your application grows (e.g., AppointmentsBloc)
-      ],
-
-      child: const DentistApp(),
     ),
   );
 }
