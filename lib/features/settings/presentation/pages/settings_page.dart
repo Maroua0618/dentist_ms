@@ -16,7 +16,7 @@ class _SettingsPageState extends State<SettingsPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // Removed ClinicControllers, not needed
+  final ClinicControllers clinicControllers = ClinicControllers();
   final ProfilControllers profilControllers = ProfilControllers();
   final SecurityControllers securityControllers = SecurityControllers();
 
@@ -33,6 +33,7 @@ class _SettingsPageState extends State<SettingsPage>
   @override
   void dispose() {
     _tabController.dispose();
+    clinicControllers.dispose();
     profilControllers.dispose();
     securityControllers.dispose();
     super.dispose();
@@ -172,7 +173,7 @@ class _SettingsPageState extends State<SettingsPage>
                     // Clinic Info Tab
                     SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
-                      child: clinic(context, width, height),
+                      child: clinic(context, width, height, clinicControllers),
                     ),
 
                     // Profile Tab
