@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/appointment_model.dart';
-import '../services/appointment_service.dart';
 import '../utils/appointment_utils.dart';
 
 class TotalAppointmentsDialog extends StatefulWidget {
-  final AppointmentService service;
+  final List<Appointment> appointments;
 
   const TotalAppointmentsDialog({
     super.key,
-    required this.service,
+    required this.appointments,
   });
 
   @override
@@ -30,7 +29,7 @@ class _TotalAppointmentsDialogState extends State<TotalAppointmentsDialog> {
   }
 
   void _initializeAppointments() {
-    allAppointments = widget.service.getAllAppointments().map((app) {
+    allAppointments = widget.appointments.map((app) {
       return AppointmentWithStatus(
         appointment: app,
         status: _getAppointmentStatus(app),

@@ -1,4 +1,7 @@
 import 'package:dentist_ms/app.dart';
+import 'package:dentist_ms/features/appointments/bloc/appointment_bloc.dart';
+import 'package:dentist_ms/features/appointments/data/appointment_remote.dart';
+import 'package:dentist_ms/features/appointments/repositories/appointment_repository.dart';
 import 'package:dentist_ms/features/patients/bloc/patient_bloc.dart';
 import 'package:dentist_ms/features/patients/data/patient_remote.dart';
 import 'package:dentist_ms/features/patients/repositories/patient_repository.dart';
@@ -29,6 +32,8 @@ void main() async {
   final patientRepository = SupabasePatientRepository(
     remote: patientRemoteDataSource,
   );
+  final appointmentRemoteDataSource = AppointmentRemoteDataSource(Supabase.instance.client);
+  final appointmentRepository = SupabaseAppointmentRepository(remote: appointmentRemoteDataSource);
 
   runApp(
     // 3. Inject the BLoC providers above the application root
@@ -37,6 +42,9 @@ void main() async {
         BlocProvider<PatientBloc>(
           // The repository is passed to the Bloc
           create: (context) => PatientBloc(repository: patientRepository),
+        ),
+        BlocProvider<AppointmentBloc>(
+          create: (context) => AppointmentBloc(repository: appointmentRepository),
         ),
         // Add other Blocs here as your application grows (e.g., AppointmentsBloc)
       ],

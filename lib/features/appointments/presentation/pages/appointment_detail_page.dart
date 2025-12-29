@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import '../../bloc/appointment_bloc.dart';
 import '../models/appointment_model.dart';
 
 class AppointmentDetailPage extends StatefulWidget {
@@ -209,6 +211,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                         appointmentEndTime = DateTime.now();
                         appointment.status = 'completed';
                       });
+                      context.read<AppointmentBloc>().add(UpdateAppointment(appointment));
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -1279,6 +1282,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                         onPressed: () {
                           appointment = Appointment(
                             id: appointment.id,
+                            patientId: appointment.patientId,
                             patientName: patientNameController.text,
                             procedure: procedureController.text,
                             time: appointment.time,
@@ -1327,8 +1331,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
             ),
           ),
         ),
-      ),
-    );
+      ),);
   }
 
   void _showAddPaymentDialog() {
@@ -1337,6 +1340,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
 
     showDialog(
       context: context,
+      
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         backgroundColor: Colors.white,
@@ -1458,7 +1462,17 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                           return;
                         }
 
-                        final amount = double.parse(amountController.text);
+                        final parsedAmount = double.tryParse(amountController.text.replaceAll(',', '.'));
+                        if (parsedAmount == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Montant invalide'),
+                              backgroundColor: Color(0xFFEF4444),
+                            ),
+                          );
+                          return;
+                        }
+                        final amount = parsedAmount;
                         final newPayment = PaymentRecord(
                           id: DateTime.now().millisecondsSinceEpoch.toString(),
                           amount: amount,
@@ -1492,8 +1506,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
             ),
           ),
         ),
-      ),
-    );
+      ));
   }
 
   Widget _buildDialogTextField(String label, TextEditingController controller) {

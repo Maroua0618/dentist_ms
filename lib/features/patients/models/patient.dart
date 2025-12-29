@@ -33,6 +33,14 @@ class Patient extends Equatable {
     this.updatedAt,
   });
 
+  /// Computed full name for display purposes
+  String get fullName {
+    final fname = firstName?.trim() ?? '';
+    final lname = lastName?.trim() ?? '';
+    if (fname.isEmpty && lname.isEmpty) return 'Unknown Patient';
+    return '$fname $lname'.trim();
+  }
+
   /// Factory method to create a Patient from Supabase JSON
   factory Patient.fromJson(Map<String, dynamic> json) {
     return Patient(
@@ -65,21 +73,20 @@ class Patient extends Equatable {
       'first_name': firstName,
       'last_name': lastName,
       'gender': gender,
-      'date_of_birth': dateOfBirth?.toIso8601String().split('T').first, // Date only for SQL date types
+      'date_of_birth': dateOfBirth?.toIso8601String().split('T').first,
       'blood_type': bloodType,
       'phone1': phone1,
       'phone2': phone2,
       'email': email,
       'address': address,
       'city': city,
-      'status': status ?? 'active', // Default to active if null
+      'status': status ?? 'active',
     };
-    
-    // Only include ID if updating (Supabase handles ID generation on insert)
+
     if (id != null) {
       data['id'] = id;
     }
-    
+
     return data;
   }
 
@@ -134,4 +141,8 @@ class Patient extends Equatable {
         createdAt,
         updatedAt,
       ];
+
+  /// Optional: nice for debugging
+  @override
+  String toString() => fullName;
 }
