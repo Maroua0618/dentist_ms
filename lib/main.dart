@@ -1,4 +1,7 @@
 import 'package:dentist_ms/app.dart';
+import 'package:dentist_ms/features/auth/bloc/auth_bloc.dart';
+import 'package:dentist_ms/features/auth/bloc/auth_event.dart';
+import 'package:dentist_ms/features/auth/data/auth_repository.dart';
 import 'package:dentist_ms/features/appointments/bloc/appointment_bloc.dart';
 import 'package:dentist_ms/features/appointments/data/appointment_remote.dart';
 import 'package:dentist_ms/features/appointments/repositories/appointment_repository.dart';
@@ -12,22 +15,28 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables
   await dotenv.load();
   final supabaseUrl = dotenv.env['SUPABASE_URL']!;
   final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY']!;
 
+  // Initialize Supabase
   try {
     await Supabase.initialize(
       url: supabaseUrl,
       anonKey: supabaseAnonKey,
       debug: true, // Set to false in production
     );
+    debugPrint('✅ Supabase initialized successfully');
   } catch (e) {
-    print('Error initializing Supabase: $e');
+    debugPrint('❌ Error initializing Supabase: $e');
   }
 
-  // 2. DEPENDENCY INJECTION Setup
-  // Initialize the Data Source and Repository once
+  final supabase = Supabase. instance. client;
+
+  // Initialize repositories
+  final authRepository = AuthRepository(supabase);
   final patientRemoteDataSource = PatientRemoteDataSource();
   final patientRepository = SupabasePatientRepository(
     remote: patientRemoteDataSource,
@@ -36,9 +45,33 @@ void main() async {
   final appointmentRepository = SupabaseAppointmentRepository(remote: appointmentRemoteDataSource);
 
   runApp(
-    // 3. Inject the BLoC providers above the application root
-    MultiBlocProvider(
+    MultiRepositoryProvider(
       providers: [
+        RepositoryProvider<AuthRepository>(
+          create: (_) => authRepository,
+        ),
+        RepositoryProvider<SupabasePatientRepository>(
+          create: (_) => patientRepository,
+        ),
+      ],
+      child: MultiBlocProvider(
+        providers: [
+          // Auth BLoC - MUST be first
+          BlocProvider<AuthBloc>(
+            create:  (context) => AuthBloc(
+              context. read<AuthRepository>(),
+            ).. add(AuthStarted()),
+          ),
+
+          // Feature BLoCs
+          BlocProvider<PatientBloc>(
+            create: (context) => PatientBloc(
+              repository: context.read<SupabasePatientRepository>(),
+            ),
+          ),
+        ],
+        child: const DentistApp(),
+      ),
         BlocProvider<PatientBloc>(
           // The repository is passed to the Bloc
           create: (context) => PatientBloc(repository: patientRepository),
