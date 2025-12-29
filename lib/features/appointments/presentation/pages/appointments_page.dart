@@ -20,6 +20,13 @@ class _AppointmentPageState extends State<AppointmentPage> {
   DateTime calendarMonth = DateTime.now();
   String viewMode = 'Jour';
   String? hoveredAppointmentId;
+  List<Appointment> getTodayAppointments(List<Appointment> all) {
+  final today = selectedDay;  // Use selectedDay, not filtered by viewMode
+  return all.where((a) =>
+      a.appointmentDate.year == today.year &&
+      a.appointmentDate.month == today.month &&
+      a.appointmentDate.day == today.day).toList();
+}
 
   @override
   void initState() {
@@ -284,12 +291,12 @@ class _AppointmentPageState extends State<AppointmentPage> {
     );
   }
 
-  Widget _buildSingleColumn(List<Appointment> all, List<Appointment> filtered,
+  Widget _buildSingleColumn(List<Appointment> all, List<Appointment> appointments,
       int confirmed, int pending, int cancelled, double width) {
     return SingleChildScrollView(
       child: Column(
         children: [
-          _buildHeader(all, filtered, confirmed, pending, cancelled, width, true),
+          _buildHeader(all, appointments, confirmed, pending, cancelled, width, true),
           Container(
             color: Colors.white,
             padding: const EdgeInsets.all(20),
@@ -306,18 +313,18 @@ class _AppointmentPageState extends State<AppointmentPage> {
           Container(
             color: const Color(0xFFF9FAFB),
             padding: const EdgeInsets.all(20),
-            child: _buildAppointmentsList(filtered),
+            child: _buildAppointmentsList(getTodayAppointments(appointments)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDualColumn(List<Appointment> all, List<Appointment> filtered,
+  Widget _buildDualColumn(List<Appointment> all, List<Appointment> appointments,
       int confirmed, int pending, int cancelled, double width) {
     return Column(
       children: [
-        _buildHeader(all, filtered, confirmed, pending, cancelled, width, false),
+        _buildHeader(all, appointments, confirmed, pending, cancelled, width, false),
         Expanded(
           child: Row(
             children: [
@@ -339,7 +346,7 @@ class _AppointmentPageState extends State<AppointmentPage> {
                 child: Container(
                   color: const Color(0xFFF9FAFB),
                   padding: const EdgeInsets.all(24),
-                  child: _buildAppointmentsList(filtered),
+                  child: _buildAppointmentsList(getTodayAppointments(appointments)),
                 ),
               ),
             ],
