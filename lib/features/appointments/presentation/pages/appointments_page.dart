@@ -7,6 +7,7 @@ import '../utils/appointment_utils.dart';
 import 'appointment_detail_page.dart';
 import 'total_appointments_dialog.dart';
 import '../dialogs/schedule_appointment_dialog.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AppointmentPage extends StatefulWidget {
   const AppointmentPage({super.key});
@@ -20,23 +21,67 @@ class _AppointmentPageState extends State<AppointmentPage> {
   DateTime calendarMonth = DateTime.now();
   String viewMode = 'Jour';
   String? hoveredAppointmentId;
+
+  // Multi-doctor logic
+  int? loggedInDoctorId;
+  int? selectedFilterDoctorId;
+  List<Map<String, dynamic>> doctors = [];
+
   List<Appointment> getTodayAppointments(List<Appointment> all) {
-  final today = selectedDay;  // Use selectedDay, not filtered by viewMode
-  return all.where((a) =>
-      a.appointmentDate.year == today.year &&
-      a.appointmentDate.month == today.month &&
-      a.appointmentDate.day == today.day).toList();
-}
+    final today = selectedDay;
+    var dayAppointments = all.where((a) =>
+    a.appointmentDate.year == today.year &&
+    a.appointmentDate.month == today.month &&
+    a.appointmentDate.day == today.day &&
+    a.status != 'cancelled' // ← THIS LINE ADDED
+).toList();
+    final effectiveDoctorId = selectedFilterDoctorId ?? loggedInDoctorId;
+    if (effectiveDoctorId != null) {
+      dayAppointments = dayAppointments.where((a) => a.doctorId == effectiveDoctorId).toList();
+    }
+
+    return dayAppointments;
+  }
 
   @override
   void initState() {
     super.initState();
-    // ✅ Load appointments from database
     context.read<AppointmentBloc>().add(LoadAppointments());
+    _fetchDoctorsAndCurrentUser();
   }
 
-  Color _getTreatmentColor(String procedure) => AppointmentUtils.getTreatmentColor(procedure);
-  Color _getStatusColor(String status) => AppointmentUtils.getStatusColor(status);
+  Future<void> _fetchDoctorsAndCurrentUser() async {
+    try {
+      final doctorResp = await Supabase.instance.client
+          .from('users')
+          .select('id, first_name, last_name')
+          .eq('role', 'doctor')
+          .order('first_name');
+
+      setState(() {
+        doctors = List<Map<String, dynamic>>.from(doctorResp);
+      });
+
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        final userResp = await Supabase.instance.client
+            .from('users')
+            .select('id')
+            .eq('auth_id', user.id)
+            .eq('role', 'doctor')
+            .maybeSingle();
+
+        if (userResp != null) {
+          setState(() {
+            loggedInDoctorId = userResp['id'] as int;
+            selectedFilterDoctorId = loggedInDoctorId;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading doctors or current user: $e');
+    }
+  }
 
   void navigateToAppointmentDetail(Appointment appointment) {
     Navigator.push(
@@ -50,7 +95,6 @@ class _AppointmentPageState extends State<AppointmentPage> {
     );
   }
 
-  // ✅ Use real ScheduleAppointmentDialog
   void showScheduleAppointmentDialog() {
     showDialog(
       context: context,
@@ -63,143 +107,6 @@ class _AppointmentPageState extends State<AppointmentPage> {
       context: context,
       builder: (BuildContext context) => TotalAppointmentsDialog(appointments: appointments),
     );
-  }
-
-  void showPatientListDialog(String filterType, List<Appointment> allAppointments) {
-    final List<Appointment> appointmentsToShow = filterType == 'all'
-        ? allAppointments
-        : allAppointments.where((a) => a.status == filterType).toList();
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          backgroundColor: Colors.white,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _getFilterTitle(filterType),
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF111827),
-                            ),
-                          ),
-                          Text(
-                            '${appointmentsToShow.length} rendez-vous',
-                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: appointmentsToShow.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.inbox, size: 48, color: Colors.grey[300]),
-                              const SizedBox(height: 12),
-                              Text('Aucun rendez-vous trouvé',
-                                  style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                            ],
-                          ),
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: appointmentsToShow.length,
-                          separatorBuilder: (_, __) => Divider(color: Colors.grey[200], height: 1),
-                          itemBuilder: (context, index) {
-                            final apt = appointmentsToShow[index];
-                            return InkWell(
-                              onTap: () {
-                                Navigator.pop(context);
-                                navigateToAppointmentDetail(apt);
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 4,
-                                      height: 50,
-                                      decoration: BoxDecoration(
-                                        color: filterType == 'all'
-                                            ? _getStatusColor(apt.status)
-                                            : _getTreatmentColor(apt.procedure),
-                                        borderRadius: BorderRadius.circular(2),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            apt.patientName,
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            '${apt.procedure} • ${apt.time}',
-                                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey[400]),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  String _getFilterTitle(String filterType) {
-    switch (filterType) {
-      case 'all':
-        return 'Tous les rendez-vous';
-      case 'confirmed':
-        return 'Rendez-vous confirmés';
-      case 'pending':
-        return 'Rendez-vous en attente';
-      case 'cancelled':
-        return 'Rendez-vous annulés';
-      default:
-        return 'Rendez-vous';
-    }
   }
 
   List<Appointment> getFilteredAppointments(List<Appointment> all) {
@@ -227,10 +134,13 @@ class _AppointmentPageState extends State<AppointmentPage> {
 
   bool hasAppointmentsOnDay(DateTime day, List<Appointment> all) {
     return all.any((a) =>
-        a.appointmentDate.year == day.year &&
-        a.appointmentDate.month == day.month &&
-        a.appointmentDate.day == day.day);
+    a.appointmentDate.year == day.year &&
+    a.appointmentDate.month == day.month &&
+    a.appointmentDate.day == day.day &&
+    a.status != 'cancelled'); // ← THIS LINE ADDED
   }
+
+  bool get isSingleDoctorView => selectedFilterDoctorId != null || loggedInDoctorId != null;
 
   @override
   Widget build(BuildContext context) {
@@ -247,13 +157,14 @@ class _AppointmentPageState extends State<AppointmentPage> {
           final confirmed = filteredAppointments.where((a) => a.status == 'confirmed').length;
           final pending = filteredAppointments.where((a) => a.status == 'pending').length;
           final cancelled = filteredAppointments.where((a) => a.status == 'cancelled').length;
+          final todayAppointments = getTodayAppointments(appointments);
           final screenWidth = MediaQuery.of(context).size.width;
 
           return Scaffold(
             backgroundColor: const Color(0xFFF3F4F6),
             body: screenWidth < 800
-                ? _buildSingleColumn(appointments, filteredAppointments, confirmed, pending, cancelled, screenWidth)
-                : _buildDualColumn(appointments, filteredAppointments, confirmed, pending, cancelled, screenWidth),
+                ? _buildSingleColumn(appointments, filteredAppointments, todayAppointments, confirmed, pending, cancelled, screenWidth)
+                : _buildDualColumn(appointments, filteredAppointments, todayAppointments, confirmed, pending, cancelled, screenWidth),
           );
         } else if (state is AppointmentOperationFailure) {
           return Scaffold(
@@ -291,12 +202,12 @@ class _AppointmentPageState extends State<AppointmentPage> {
     );
   }
 
-  Widget _buildSingleColumn(List<Appointment> all, List<Appointment> appointments,
+  Widget _buildSingleColumn(List<Appointment> all, List<Appointment> filtered, List<Appointment> todayApps,
       int confirmed, int pending, int cancelled, double width) {
     return SingleChildScrollView(
       child: Column(
         children: [
-          _buildHeader(all, appointments, confirmed, pending, cancelled, width, true),
+          _buildHeader(all, filtered, todayApps, confirmed, pending, cancelled, width, true),
           Container(
             color: Colors.white,
             padding: const EdgeInsets.all(20),
@@ -313,18 +224,18 @@ class _AppointmentPageState extends State<AppointmentPage> {
           Container(
             color: const Color(0xFFF9FAFB),
             padding: const EdgeInsets.all(20),
-            child: _buildAppointmentsList(getTodayAppointments(appointments)),
+            child: _buildAppointmentsList(todayApps),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDualColumn(List<Appointment> all, List<Appointment> appointments,
+  Widget _buildDualColumn(List<Appointment> all, List<Appointment> filtered, List<Appointment> todayApps,
       int confirmed, int pending, int cancelled, double width) {
     return Column(
       children: [
-        _buildHeader(all, appointments, confirmed, pending, cancelled, width, false),
+        _buildHeader(all, filtered, todayApps, confirmed, pending, cancelled, width, false),
         Expanded(
           child: Row(
             children: [
@@ -346,7 +257,7 @@ class _AppointmentPageState extends State<AppointmentPage> {
                 child: Container(
                   color: const Color(0xFFF9FAFB),
                   padding: const EdgeInsets.all(24),
-                  child: _buildAppointmentsList(getTodayAppointments(appointments)),
+                  child: _buildAppointmentsList(todayApps),
                 ),
               ),
             ],
@@ -356,7 +267,7 @@ class _AppointmentPageState extends State<AppointmentPage> {
     );
   }
 
-  Widget _buildHeader(List<Appointment> all, List<Appointment> filtered,
+  Widget _buildHeader(List<Appointment> all, List<Appointment> filtered, List<Appointment> todayApps,
       int confirmed, int pending, int cancelled, double width, bool compact) {
     return Container(
       padding: EdgeInsets.all(compact ? 20 : 24),
@@ -391,6 +302,7 @@ class _AppointmentPageState extends State<AppointmentPage> {
                     _buildModeButton('Semaine'),
                     _buildModeButton('Mois'),
                   ],
+                  // Doctor filter REMOVED from here
                   if (width > 1050)
                     ElevatedButton.icon(
                       onPressed: () => showTotalAppointmentsDialog(all),
@@ -449,6 +361,28 @@ class _AppointmentPageState extends State<AppointmentPage> {
     );
   }
 
+ Widget _buildDoctorFilterDropdown() {
+  return DropdownButton<int?>(
+    value: selectedFilterDoctorId,
+    hint: const Text('Tous les médecins'),
+    items: [
+      const DropdownMenuItem<int?>(value: null, child: Text('Tous les médecins')),
+      ...doctors.map((doc) {
+        final name = '${doc['first_name']} ${doc['last_name']}'.trim(); // ← Removed "Dr."
+        return DropdownMenuItem<int?>(value: doc['id'] as int, child: Text(name));
+      }).toList(),
+    ],
+    onChanged: (value) {
+      setState(() {
+        selectedFilterDoctorId = value;
+      });
+    },
+    style: const TextStyle(color: Color(0xFF111827), fontSize: 14),
+    dropdownColor: Colors.white,
+    icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF3B82F6)),
+    underline: Container(height: 1, color: const Color(0xFF3B82F6)),
+  );
+}
   Widget _buildModeButton(String mode) {
     final isActive = viewMode == mode;
     return ElevatedButton(
@@ -619,13 +553,25 @@ class _AppointmentPageState extends State<AppointmentPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          DateFormat('EEEE, MMMM d, yyyy').format(selectedDay),
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        Text(
-          '${appointments.length} rendez-vous',
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  DateFormat('EEEE, MMMM d, yyyy').format(selectedDay),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  '${appointments.length} rendez-vous',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+            // Doctor filter moved here — above the timeline
+            _buildDoctorFilterDropdown(),
+          ],
         ),
         const SizedBox(height: 20),
         appointments.isEmpty
@@ -651,81 +597,228 @@ class _AppointmentPageState extends State<AppointmentPage> {
 
     return SingleChildScrollView(
       child: Column(
-        children: List.generate(10, (i) {
+        children: List.generate(12, (i) {
           final hour = 8 + i;
           final hourAppts = sorted.where((a) {
-            final parts = a.time.split(':');
-            final h = int.tryParse(parts[0]) ?? -1;
+            final h = int.tryParse(a.time.split(':')[0]) ?? -1;
             return h == hour;
           }).toList();
 
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 50,
-                child: Text(
-                  '${hour.toString().padLeft(2, '0')}:00',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-                ),
-              ),
-              Expanded(
-                child: Container(
-                  height: 60,
-                  decoration: BoxDecoration(
-                    border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+          if (hourAppts.isEmpty) {
+            return SizedBox(
+              height: 80,
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 60,
+                    child: Text(
+                      '${hour.toString().padLeft(2, '0')}:00',
+                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                    ),
                   ),
-                  child: Stack(
-                    children: hourAppts
-                        .map((apt) => Positioned(
-                              top: 4,
-                              left: 0,
-                              right: 8,
-                              child: InkWell(
-                                onTap: () => navigateToAppointmentDetail(apt),
-                                child: Container(
-                                  height: 50,
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: apt.cardColor,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        apt.patientName,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      Text(
-                                        apt.procedure,
-                                        style: TextStyle(
-                                          fontSize: 9,
-                                          color: Colors.white.withOpacity(0.9),
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                  const Expanded(child: Divider()),
+                ],
+              ),
+            );
+          }
+
+          final isSingleDoctor = isSingleDoctorView;
+
+          return SizedBox(
+            height: 100,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 60,
+                  child: Text(
+                    '${hour.toString().padLeft(2, '0')}:00',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey[700]),
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    children: hourAppts.map((apt) {
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: InkWell(
+                            onTap: () => navigateToAppointmentDetail(apt),
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: apt.cardColor,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 6)],
                               ),
-                            ))
-                        .toList(),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    apt.patientName,
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    isSingleDoctor ? apt.procedure : apt.doctorName,
+                                    style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         }),
       ),
     );
+  }
+
+  // showPatientListDialog and _getFilterTitle remain the same
+  void showPatientListDialog(String filterType, List<Appointment> allAppointments) {
+    final List<Appointment> appointmentsToShow = filterType == 'all'
+        ? allAppointments
+        : allAppointments.where((a) => a.status == filterType).toList();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Colors.white,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _getFilterTitle(filterType),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF111827),
+                            ),
+                          ),
+                          Text(
+                            '${appointmentsToShow.length} rendez-vous',
+                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: appointmentsToShow.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.inbox, size: 48, color: Colors.grey[300]),
+                              const SizedBox(height: 12),
+                              Text('Aucun rendez-vous trouvé',
+                                  style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                            ],
+                          ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: appointmentsToShow.length,
+                          separatorBuilder: (_, __) => Divider(color: Colors.grey[200], height: 1),
+                          itemBuilder: (context, index) {
+                            final apt = appointmentsToShow[index];
+                            return InkWell(
+                              onTap: () {
+                                Navigator.pop(context);
+                                navigateToAppointmentDetail(apt);
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 4,
+                                      height: 50,
+                                      decoration: BoxDecoration(
+                                        color: filterType == 'all'
+                                            ? AppointmentUtils.getStatusColor(apt.status)
+                                            : AppointmentUtils.getTreatmentColor(apt.procedure),
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            apt.patientName,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '${apt.procedure} • ${apt.time}',
+                                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey[400]),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _getFilterTitle(String filterType) {
+    switch (filterType) {
+      case 'all':
+        return 'Tous les rendez-vous';
+      case 'confirmed':
+        return 'Rendez-vous confirmés';
+      case 'pending':
+        return 'Rendez-vous en attente';
+      case 'cancelled':
+        return 'Rendez-vous annulés';
+      default:
+        return 'Rendez-vous';
+    }
   }
 }

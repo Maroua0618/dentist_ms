@@ -87,6 +87,7 @@ class AppointmentRemoteDataSource {
       'patient_id': appointment.patientId,
       'treatment_id': treatmentId,
       'appointment_id': appointmentId,
+      'doctor_id': appointment.doctorId,
       'session_date': appointment.appointmentDate.toIso8601String().split('T').first,
       'price': appointment.totalCost,
       'status': appointment.status,

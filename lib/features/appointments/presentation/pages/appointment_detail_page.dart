@@ -144,7 +144,6 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                 ),
               ),
               const SizedBox(height: 24),
-              // Résumé du rendez-vous
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -272,6 +271,8 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
     final totalPaid = getTotalPaid();
     final remainingBalance = appointment.totalCost - totalPaid;
 
+    final String currentStatus = isAppointmentCompleted ? 'completed' : appointment.status;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF3F4F6),
       appBar: AppBar(
@@ -300,18 +301,19 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: _getStatusColor(appointment.status).withOpacity(0.1),
+                  color: _getStatusColor(currentStatus).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  (isAppointmentCompleted ? 'terminé' : appointment.status)
-                      .substring(0, 1)
-                      .toUpperCase() +
-                      (isAppointmentCompleted ? 'terminé' : appointment.status)
-                          .substring(1),
+                  currentStatus == 'pending'
+                      ? 'EN ATTENTE'
+                      : currentStatus == 'confirmed'
+                          ? 'CONFIRMÉ'
+                          : currentStatus == 'completed'
+                              ? 'TERMINÉ'
+                              : 'ANNULÉ',
                   style: TextStyle(
-                    color: _getStatusColor(
-                        isAppointmentCompleted ? 'completed' : appointment.status),
+                    color: _getStatusColor(currentStatus),
                     fontWeight: FontWeight.w600,
                     fontSize: 12,
                   ),
@@ -324,7 +326,6 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // En-tête amélioré
             Container(
               padding: const EdgeInsets.all(24),
               margin: const EdgeInsets.all(16),
@@ -403,7 +404,6 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  // Ligne Date Heure Durée
                   Row(
                     children: [
                       Expanded(
@@ -431,10 +431,40 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 24),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      _buildClickableStatusCard(
+                        'En attente',
+                        currentStatus == 'pending',
+                        const Color(0xFF3B82F6),
+                        'pending',
+                      ),
+                      _buildClickableStatusCard(
+                        'Confirmé',
+                        currentStatus == 'confirmed',
+                        const Color(0xFF10B981),
+                        'confirmed',
+                      ),
+                      _buildClickableStatusCard(
+                        'Terminé',
+                        currentStatus == 'completed',
+                        const Color(0xFF10B981),
+                        'completed',
+                      ),
+                      _buildClickableStatusCard(
+                        'Annulé',
+                        currentStatus == 'cancelled',
+                        const Color(0xFFEF4444),
+                        'cancelled',
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
-            // Navigation par onglets
             Container(
               color: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -449,7 +479,6 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                 ),
               ),
             ),
-            // Contenu des onglets
             Container(
               color: Colors.white,
               margin: const EdgeInsets.only(top: 1),
@@ -479,6 +508,47 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                   icon: const Icon(Icons.play_arrow),
                   label: const Text('Démarrer le rendez-vous'),
                 ),
+    );
+  }
+
+  Widget _buildClickableStatusCard(String label, bool isActive, Color color, String statusValue) {
+    return GestureDetector(
+      onTap: isAppointmentCompleted
+          ? null
+          : () {
+              setState(() {
+                appointment.status = statusValue;
+                if (statusValue == 'completed') {
+                  isAppointmentCompleted = true;
+                }
+              });
+              context.read<AppointmentBloc>().add(UpdateAppointment(appointment));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Statut mis à jour : $label'),
+                  backgroundColor: color,
+                ),
+              );
+            },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive ? color.withOpacity(0.15) : Colors.grey[50],
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isActive ? color : const Color(0xFFE5E7EB),
+            width: isActive ? 2 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: isActive ? color : Colors.grey[700],
+          ),
+        ),
+      ),
     );
   }
 
@@ -565,6 +635,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
   }
 
   Widget _buildOverviewTab() {
+    final String currentStatus = isAppointmentCompleted ? 'completed' : appointment.status;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -614,7 +685,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
             children: [
               _buildInfoRow('ID du rendez-vous', '#APT${appointment.id.padLeft(4, '0')}'),
               const Divider(height: 20),
-              _buildInfoRow('Statut', isAppointmentCompleted ? 'TERMINÉ' : appointment.status.toUpperCase()),
+              _buildInfoRow('Statut', currentStatus == 'pending' ? 'EN ATTENTE' : currentStatus == 'confirmed' ? 'CONFIRMÉ' : currentStatus == 'completed' ? 'TERMINÉ' : 'ANNULÉ'),
               const Divider(height: 20),
               _buildInfoRow('Type de traitement', appointment.procedure),
             ],
@@ -876,7 +947,6 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Cartes de résumé de paiement
         Row(
           children: [
             Expanded(
@@ -905,7 +975,6 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
           ],
         ),
         const SizedBox(height: 24),
-        // Barre de progression
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -947,7 +1016,6 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
           ],
         ),
         const SizedBox(height: 24),
-        // Bouton Ajouter un paiement
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -1340,7 +1408,6 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
 
     showDialog(
       context: context,
-      
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         backgroundColor: Colors.white,
@@ -1546,13 +1613,12 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'confirmed':
+      case 'completed':
         return const Color(0xFF10B981);
       case 'pending':
         return const Color(0xFF3B82F6);
       case 'cancelled':
         return const Color(0xFFEF4444);
-      case 'completed':
-        return const Color(0xFF10B981);
       default:
         return const Color(0xFF6B7280);
     }
