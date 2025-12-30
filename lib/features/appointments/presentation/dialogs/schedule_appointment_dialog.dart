@@ -9,9 +9,12 @@ import '../../../patients/models/patient.dart';
 import '../../../billing/models/treatment.dart';
 
 class ScheduleAppointmentDialog extends StatefulWidget {
-  
-  const ScheduleAppointmentDialog({super.key});
-  
+  final int? preselectedDoctorId;
+
+  const ScheduleAppointmentDialog({
+    super.key,
+    this.preselectedDoctorId,
+  });
 
   @override
   State<ScheduleAppointmentDialog> createState() =>
@@ -35,7 +38,6 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
   List<Map<String, dynamic>> doctors = [];
   List<Treatment> treatments = [];
 
-  // Time slot validation
   List<String> takenTimes = [];
   bool loadingTakenTimes = false;
 
@@ -49,6 +51,10 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
     _fetchPatients();
     _fetchDoctors();
     _fetchTreatments();
+
+    if (widget.preselectedDoctorId != null) {
+      selectedDoctorId = widget.preselectedDoctorId;
+    }
   }
 
   Future<void> _fetchPatients() async {
@@ -79,9 +85,24 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
           .eq('role', 'doctor')
           .order('first_name');
 
+      final List<Map<String, dynamic>> fetchedDoctors =
+          List<Map<String, dynamic>>.from(resp);
+
       setState(() {
-        doctors = List<Map<String, dynamic>>.from(resp);
+        doctors = fetchedDoctors;
         loadingDoctors = false;
+
+        if (widget.preselectedDoctorId != null && doctors.isNotEmpty) {
+          final doctor = doctors.firstWhere(
+            (d) => d['id'] == widget.preselectedDoctorId,
+            orElse: () => {'first_name': '', 'last_name': 'Inconnu'},
+          );
+          selectedDoctorName =
+              '${doctor['first_name']} ${doctor['last_name']}'.trim();
+          if (selectedDoctorName.isEmpty) {
+            selectedDoctorName = 'Médecin inconnu';
+          }
+        }
       });
     } catch (e) {
       debugPrint('Error fetching doctors: $e');
@@ -111,9 +132,10 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
     }
   }
 
-  // UPDATED: Now checks BOTH doctor and patient
   Future<void> _loadTakenTimes() async {
-    if (selectedDoctorId == null || selectedPatient == null || selectedDate == null) {
+    if (selectedDoctorId == null ||
+        selectedPatient == null ||
+        selectedDate == null) {
       setState(() => takenTimes = []);
       return;
     }
@@ -121,21 +143,21 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
     setState(() => loadingTakenTimes = true);
 
     try {
-      final String dayStart = '${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}T00:00:00';
-      final String dayEnd = '${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${(selectedDate!.day + 1).toString().padLeft(2, '0')}T00:00:00';
+      final String dayStart =
+          '${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}T00:00:00';
+      final String dayEnd =
+          '${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${(selectedDate!.day + 1).toString().padLeft(2, '0')}T00:00:00';
 
       final resp = await Supabase.instance.client
           .from('appointments')
           .select('start_datetime')
           .gte('start_datetime', dayStart)
           .lt('start_datetime', dayEnd)
-          .or('doctor_id.eq.$selectedDoctorId,patient_id.eq.${selectedPatient!.id}');
+          .or(
+              'doctor_id.eq.$selectedDoctorId,patient_id.eq.${selectedPatient!.id}');
 
       final List<String> times = (resp as List<dynamic>)
-          .map((e) {
-            final String fullTime = e['start_datetime'] as String;
-            return fullTime.substring(11, 16); // "08:00"
-          })
+          .map((e) => (e['start_datetime'] as String).substring(11, 16))
           .toList();
 
       setState(() {
@@ -158,7 +180,8 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
     int attemptedHour = int.tryParse(parts[0]) ?? 8;
     int attemptedMinute = int.tryParse(parts[1]) ?? 0;
 
-    DateTime attemptedStart = DateTime(2020, 1, 1, attemptedHour, attemptedMinute);
+    DateTime attemptedStart =
+        DateTime(2020, 1, 1, attemptedHour, attemptedMinute);
     DateTime latestEndTime = attemptedStart;
 
     for (String takenTimeStr in takenTimes) {
@@ -167,7 +190,7 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
       int takenMinute = int.tryParse(tParts[1]) ?? 0;
 
       DateTime takenStart = DateTime(2020, 1, 1, takenHour, takenMinute);
-      DateTime takenEnd = takenStart.add(const Duration(minutes: 60)); // assume 60 min
+      DateTime takenEnd = takenStart.add(const Duration(minutes: 60));
 
       if (takenStart.isBefore(latestEndTime.add(const Duration(minutes: 1))) ||
           takenStart.isAtSameMomentAs(latestEndTime)) {
@@ -230,8 +253,10 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
 
                   Row(
                     children: [
-                      Expanded(child: _buildDoctorDropdown()),
-                      const SizedBox(width: 16),
+                      if (widget.preselectedDoctorId == null)
+                        Expanded(child: _buildDoctorDropdown()),
+                      if (widget.preselectedDoctorId == null)
+                        const SizedBox(width: 16),
                       Expanded(child: _buildPatientAutocomplete()),
                     ],
                   ),
@@ -270,7 +295,9 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
+                      TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Annuler')),
                       const SizedBox(width: 12),
                       ElevatedButton(
                         onPressed: isSubmitting ? null : _submitAppointment,
@@ -278,7 +305,8 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
                               )
                             : const Text('Planifier le rendez-vous'),
                       ),
@@ -301,11 +329,13 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
         selectedTreatment == null ||
         selectedDate == null ||
         (selectedTime == null && customTime.isEmpty)) {
-      setState(() => errorMessage = 'Veuillez remplir tous les champs obligatoires');
+      setState(() =>
+          errorMessage = 'Veuillez remplir tous les champs obligatoires');
       return;
     }
 
-    final String finalTime = customTime.isNotEmpty && RegExp(r'^\d{2}:\d{2}$').hasMatch(customTime)
+    final String finalTime = customTime.isNotEmpty &&
+            RegExp(r'^\d{2}:\d{2}$').hasMatch(customTime)
         ? customTime
         : selectedTime ?? '09:00';
 
@@ -333,7 +363,8 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
       time: finalTime,
       duration: selectedDuration,
       status: 'pending',
-      cardColor: AppointmentUtils.getTreatmentColor(selectedTreatment!.name ?? ''),
+      cardColor:
+          AppointmentUtils.getTreatmentColor(selectedTreatment!.name ?? ''),
       appointmentDate: selectedDate!,
       notes: notes,
       totalCost: selectedTreatment!.basePrice ?? 0.0,
@@ -346,12 +377,14 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Médecin', style: TextStyle(fontWeight: FontWeight.w600)),
+        const Text('Médecin',
+            style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         if (loadingDoctors)
           const Center(child: CircularProgressIndicator())
         else if (doctors.isEmpty)
-          const Text('Aucun médecin disponible', style: TextStyle(color: Colors.red))
+          const Text('Aucun médecin disponible',
+              style: TextStyle(color: Colors.red))
         else
           DropdownButtonFormField<int?>(
             value: selectedDoctorId,
@@ -362,7 +395,8 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
               fillColor: Colors.grey[50],
             ),
             items: doctors.map((doc) {
-              final name = '${doc['first_name'] ?? ''} ${doc['last_name'] ?? ''}'.trim();
+              final name =
+                  '${doc['first_name'] ?? ''} ${doc['last_name'] ?? ''}'.trim();
               return DropdownMenuItem<int?>(
                 value: doc['id'] as int?,
                 child: Text(name.isEmpty ? 'No name' : name),
@@ -389,7 +423,8 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Patient', style: TextStyle(fontWeight: FontWeight.w600)),
+        const Text('Patient',
+            style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         if (loadingPatients)
           const Center(child: CircularProgressIndicator())
@@ -397,11 +432,16 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
           Autocomplete<Patient>(
             displayStringForOption: (p) => p.fullName,
             optionsBuilder: (textEditingValue) {
-              if (textEditingValue.text.isEmpty) return const Iterable<Patient>.empty();
-              return patients.where((p) => p.fullName.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+              if (textEditingValue.text.isEmpty) {
+                return const Iterable<Patient>.empty();
+              }
+              return patients.where((p) => p.fullName
+                  .toLowerCase()
+                  .contains(textEditingValue.text.toLowerCase()));
             },
             onSelected: (patient) => setState(() => selectedPatient = patient),
-            fieldViewBuilder: (context, controller, focusNode, onSubmitted) => TextField(
+            fieldViewBuilder:
+                (context, controller, focusNode, onSubmitted) => TextField(
               controller: controller,
               focusNode: focusNode,
               decoration: InputDecoration(
@@ -420,32 +460,39 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Type de traitement', style: TextStyle(fontWeight: FontWeight.w600)),
+        const Text('Type de traitement',
+            style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         loadingTreatments
-          ? const Center(child: CircularProgressIndicator())
-          : DropdownButtonFormField<Treatment>(
-            value: selectedTreatment,
-            hint: const Text('Sélectionner un traitement'),
+            ? const Center(child: CircularProgressIndicator())
+            : DropdownButtonFormField<Treatment>(
+                value: selectedTreatment,
+                hint: const Text('Sélectionner un traitement'),
                 decoration: InputDecoration(
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border:
+                      OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   filled: true,
                   fillColor: Colors.grey[50],
                 ),
-                items: treatments.map((t) => DropdownMenuItem(
-                      value: t,
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(color: AppointmentUtils.getTreatmentColor(t.name ?? ''), shape: BoxShape.circle),
+                items: treatments
+                    .map((t) => DropdownMenuItem(
+                          value: t,
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                    color: AppointmentUtils.getTreatmentColor(
+                                        t.name ?? ''),
+                                    shape: BoxShape.circle),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(t.name ?? ''),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          Text(t.name ?? ''),
-                        ],
-                      ),
-                    )).toList(),
+                        ))
+                    .toList(),
                 onChanged: (value) => setState(() => selectedTreatment = value),
               ),
       ],
@@ -456,7 +503,8 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Durée', style: TextStyle(fontWeight: FontWeight.w600)),
+        const Text('Durée',
+            style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         DropdownButtonFormField<int>(
           value: selectedDuration,
@@ -484,7 +532,8 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Date', style: TextStyle(fontWeight: FontWeight.w600)),
+        const Text('Date',
+            style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         InkWell(
           onTap: () async {
@@ -514,7 +563,8 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
             child: Text(
               selectedDate == null
                   ? 'Sélectionner une date'
-                  : DateFormat('EEEE, MMMM d, yyyy', 'fr_FR').format(selectedDate!),
+                  : DateFormat('EEEE, MMMM d, yyyy', 'fr_FR')
+                      .format(selectedDate!),
             ),
           ),
         ),
@@ -526,10 +576,15 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Heure', style: TextStyle(fontWeight: FontWeight.w600)),
+        const Text('Heure',
+            style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         if (loadingTakenTimes)
-          const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+          const Center(
+              child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2))),
         DropdownButtonFormField<String>(
           value: selectedTime,
           hint: const Text('Sélectionner un créneau horaire'),
@@ -578,7 +633,8 @@ class _ScheduleAppointmentDialogState extends State<ScheduleAppointmentDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Notes', style: TextStyle(fontWeight: FontWeight.w600)),
+        const Text('Notes',
+            style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         TextField(
           maxLines: 4,

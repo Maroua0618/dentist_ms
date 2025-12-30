@@ -17,6 +17,7 @@ class AppointmentFile {
     required this.uploadedBy,
     required this.fileSizeInMB,
   });
+  
 
   factory AppointmentFile.fromJson(Map<String, dynamic> json) => AppointmentFile(
         id: json['id'] as String,
@@ -137,6 +138,43 @@ class Appointment {
     this.payments = const [],
     this.totalCost = 0.0,
   });
+  Appointment copyWith({
+    String? id,
+    int? patientId,
+    String? patientName,
+    int? doctorId,
+    String? doctorName,
+    String? procedure,
+    String? time,
+    int? duration,
+    String? status,
+    Color? cardColor,
+    DateTime? appointmentDate,
+    String? notes,
+    List<AppointmentFile>? files,
+    List<Remark>? remarks,
+    List<PaymentRecord>? payments,
+    double? totalCost,
+  }) {
+    return Appointment(
+      id: id ?? this.id,
+      patientId: patientId ?? this.patientId,
+      patientName: patientName ?? this.patientName,
+      doctorId: doctorId ?? this.doctorId,
+      doctorName: doctorName ?? this.doctorName,
+      procedure: procedure ?? this.procedure,
+      time: time ?? this.time,
+      duration: duration ?? this.duration,
+      status: status ?? this.status,
+      cardColor: cardColor ?? this.cardColor,
+      appointmentDate: appointmentDate ?? this.appointmentDate,
+      notes: notes ?? this.notes,
+      files: files ?? this.files,
+      remarks: remarks ?? this.remarks,
+      payments: payments ?? this.payments,
+      totalCost: totalCost ?? this.totalCost,
+    );
+  }
 
   factory Appointment.fromJson(Map<String, dynamic> json) {
     final isSupabaseFormat = json.containsKey('start_datetime');

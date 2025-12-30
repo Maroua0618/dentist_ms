@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/appointment_bloc.dart';
 import '../models/appointment_model.dart';
 import '../utils/appointment_utils.dart';
-import 'appointment_detail_page.dart';
 import 'total_appointments_dialog.dart';
 import '../dialogs/schedule_appointment_dialog.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -20,37 +19,21 @@ class _AppointmentPageState extends State<AppointmentPage> {
   DateTime selectedDay = DateTime.now();
   DateTime calendarMonth = DateTime.now();
   String viewMode = 'Jour';
-  String? hoveredAppointmentId;
 
-  // Multi-doctor logic
-  int? loggedInDoctorId;
+  // Role-based state
+  bool isDoctor = false;
+  int? currentDoctorId;
   int? selectedFilterDoctorId;
   List<Map<String, dynamic>> doctors = [];
-
-  List<Appointment> getTodayAppointments(List<Appointment> all) {
-    final today = selectedDay;
-    var dayAppointments = all.where((a) =>
-    a.appointmentDate.year == today.year &&
-    a.appointmentDate.month == today.month &&
-    a.appointmentDate.day == today.day &&
-    a.status != 'cancelled' // ← THIS LINE ADDED
-).toList();
-    final effectiveDoctorId = selectedFilterDoctorId ?? loggedInDoctorId;
-    if (effectiveDoctorId != null) {
-      dayAppointments = dayAppointments.where((a) => a.doctorId == effectiveDoctorId).toList();
-    }
-
-    return dayAppointments;
-  }
 
   @override
   void initState() {
     super.initState();
     context.read<AppointmentBloc>().add(LoadAppointments());
-    _fetchDoctorsAndCurrentUser();
+    _loadCurrentUserAndDoctors();
   }
 
-  Future<void> _fetchDoctorsAndCurrentUser() async {
+  Future<void> _loadCurrentUserAndDoctors() async {
     try {
       final doctorResp = await Supabase.instance.client
           .from('users')
@@ -63,84 +46,296 @@ class _AppointmentPageState extends State<AppointmentPage> {
       });
 
       final user = Supabase.instance.client.auth.currentUser;
-      if (user != null) {
-        final userResp = await Supabase.instance.client
-            .from('users')
-            .select('id')
-            .eq('auth_id', user.id)
-            .eq('role', 'doctor')
-            .maybeSingle();
+      if (user == null) return;
 
-        if (userResp != null) {
-          setState(() {
-            loggedInDoctorId = userResp['id'] as int;
-            selectedFilterDoctorId = loggedInDoctorId;
-          });
-        }
+      final userResp = await Supabase.instance.client
+          .from('users')
+          .select('id, role')
+          .eq('auth_id', user.id)
+          .maybeSingle();
+
+      if (userResp != null) {
+        final role = userResp['role'] as String;
+        final userId = userResp['id'] as int;
+
+        setState(() {
+          isDoctor = role == 'doctor';
+          if (isDoctor) {
+            currentDoctorId = userId;
+            selectedFilterDoctorId = userId;
+          } else {
+            selectedFilterDoctorId = null;
+          }
+        });
       }
     } catch (e) {
-      debugPrint('Error loading doctors or current user: $e');
+      debugPrint('Error loading user role or doctors: $e');
     }
   }
 
-  void navigateToAppointmentDetail(Appointment appointment) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AppointmentDetailPage(
-          appointment: appointment,
-          onBack: () => context.read<AppointmentBloc>().add(LoadAppointments()),
-        ),
-      ),
-    );
+  List<Appointment> _applyRoleFilter(List<Appointment> appointments) {
+    if (isDoctor && currentDoctorId != null) {
+      return appointments.where((a) => a.doctorId == currentDoctorId).toList();
+    }
+    if (selectedFilterDoctorId != null) {
+      return appointments.where((a) => a.doctorId == selectedFilterDoctorId).toList();
+    }
+    return appointments;
+  }
+
+  List<Appointment> getTodayAppointments(List<Appointment> all) {
+    final filtered = _applyRoleFilter(all);
+    final today = selectedDay;
+
+    return filtered.where((a) =>
+        a.appointmentDate.year == today.year &&
+        a.appointmentDate.month == today.month &&
+        a.appointmentDate.day == today.day &&
+        a.status != 'cancelled').toList();
+  }
+
+  List<Appointment> getFilteredAppointments(List<Appointment> all) {
+    final filtered = _applyRoleFilter(all);
+
+    if (viewMode == 'Jour') {
+      return filtered.where((a) =>
+          a.appointmentDate.year == selectedDay.year &&
+          a.appointmentDate.month == selectedDay.month &&
+          a.appointmentDate.day == selectedDay.day).toList();
+    } else if (viewMode == 'Semaine') {
+      final monday = selectedDay.subtract(Duration(days: selectedDay.weekday - 1));
+      return filtered.where((a) {
+        return a.appointmentDate.isAfter(monday.subtract(const Duration(days: 1))) &&
+            a.appointmentDate.isBefore(monday.add(const Duration(days: 7)));
+      }).toList();
+    } else {
+      return filtered.where((a) =>
+          a.appointmentDate.year == selectedDay.year &&
+          a.appointmentDate.month == selectedDay.month).toList();
+    }
+  }
+
+  bool hasAppointmentsOnDay(DateTime day, List<Appointment> all) {
+    final filtered = _applyRoleFilter(all);
+    return filtered.any((a) =>
+        a.appointmentDate.year == day.year &&
+        a.appointmentDate.month == day.month &&
+        a.appointmentDate.day == day.day &&
+        a.status != 'cancelled');
   }
 
   void showScheduleAppointmentDialog() {
     showDialog(
       context: context,
-      builder: (BuildContext context) => const ScheduleAppointmentDialog(),
+      builder: (_) => ScheduleAppointmentDialog(
+        preselectedDoctorId: isDoctor ? currentDoctorId : null,
+      ),
     );
   }
 
-  void showTotalAppointmentsDialog(List<Appointment> appointments) {
+  void showTotalAppointmentsDialog(List<Appointment> allAppointments) {
+    final filtered = _applyRoleFilter(allAppointments);
     showDialog(
       context: context,
-      builder: (BuildContext context) => TotalAppointmentsDialog(appointments: appointments),
+      builder: (_) => TotalAppointmentsDialog(appointments: filtered),
     );
   }
 
-  List<Appointment> getFilteredAppointments(List<Appointment> all) {
-    if (viewMode == 'Jour') {
-      return all
-          .where((a) =>
-              a.appointmentDate.year == selectedDay.year &&
-              a.appointmentDate.month == selectedDay.month &&
-              a.appointmentDate.day == selectedDay.day)
-          .toList();
-    } else if (viewMode == 'Semaine') {
-      final monday = selectedDay.subtract(Duration(days: selectedDay.weekday - 1));
-      return all.where((a) {
-        return a.appointmentDate.isAfter(monday.subtract(const Duration(days: 1))) &&
-            a.appointmentDate.isBefore(monday.add(const Duration(days: 7)));
-      }).toList();
-    } else {
-      return all
-          .where((a) =>
-              a.appointmentDate.year == selectedDay.year &&
-              a.appointmentDate.month == selectedDay.month)
-          .toList();
+  void showPatientListDialog(String filterType, List<Appointment> allAppointments) {
+    final baseFiltered = _applyRoleFilter(allAppointments);
+    final appointmentsToShow = filterType == 'all'
+        ? baseFiltered
+        : baseFiltered.where((a) => a.status == filterType).toList();
+
+    showDialog(
+      context: context,
+      builder: (_) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Colors.white,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _getFilterTitle(filterType),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF111827),
+                            ),
+                          ),
+                          Text(
+                            '${appointmentsToShow.length} rendez-vous',
+                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: appointmentsToShow.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.inbox, size: 48, color: Colors.grey[300]),
+                              const SizedBox(height: 12),
+                              Text('Aucun rendez-vous trouvé',
+                                  style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                            ],
+                          ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: appointmentsToShow.length,
+                          separatorBuilder: (_, __) => Divider(color: Colors.grey[200], height: 1),
+                          itemBuilder: (context, index) {
+                            final apt = appointmentsToShow[index];
+                            return InkWell(
+                              onTap: () => _showStatusChangePopup(apt),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 4,
+                                      height: 50,
+                                      decoration: BoxDecoration(
+                                        color: filterType == 'all'
+                                            ? AppointmentUtils.getStatusColor(apt.status)
+                                            : AppointmentUtils.getTreatmentColor(apt.procedure),
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            apt.patientName,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '${apt.procedure} • ${apt.time}',
+                                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey[400]),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _getFilterTitle(String filterType) {
+    switch (filterType) {
+      case 'all':
+        return 'Tous les rendez-vous';
+      case 'confirmed':
+        return 'Rendez-vous confirmés';
+      case 'pending':
+        return 'Rendez-vous en attente';
+      case 'cancelled':
+        return 'Rendez-vous annulés';
+      default:
+        return 'Rendez-vous';
     }
   }
 
-  bool hasAppointmentsOnDay(DateTime day, List<Appointment> all) {
-    return all.any((a) =>
-    a.appointmentDate.year == day.year &&
-    a.appointmentDate.month == day.month &&
-    a.appointmentDate.day == day.day &&
-    a.status != 'cancelled'); // ← THIS LINE ADDED
-  }
+  // NEW: Small popup for changing status
+  void _showStatusChangePopup(Appointment apt) {
+    String newStatus = apt.status;
 
-  bool get isSingleDoctorView => selectedFilterDoctorId != null || loggedInDoctorId != null;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Modifier le statut du rendez-vous'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Patient: ${apt.patientName}', style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text('Médecin: ${apt.doctorName}'),
+            Text('Date: ${DateFormat('EEEE d MMMM yyyy').format(apt.appointmentDate)}'),
+            Text('Heure: ${apt.time}'),
+            Text('Traitement: ${apt.procedure}'),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: newStatus,
+              decoration: const InputDecoration(
+                labelText: 'Nouveau statut',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'pending', child: Text('En attente')),
+                DropdownMenuItem(value: 'confirmed', child: Text('Confirmé')),
+                DropdownMenuItem(value: 'cancelled', child: Text('Annulé')),
+                DropdownMenuItem(value: 'no-show', child: Text('Non présenté')),
+              ],
+              onChanged: (value) {
+                if (value != null) newStatus = value;
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final updated = apt.copyWith(status: newStatus);
+              context.read<AppointmentBloc>().add(UpdateAppointment(updated));
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Statut mis à jour : $newStatus'),
+                  backgroundColor: const Color(0xFF10B981),
+                ),
+              );
+            },
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -152,19 +347,37 @@ class _AppointmentPageState extends State<AppointmentPage> {
             body: Center(child: CircularProgressIndicator(color: Color(0xFF3B82F6))),
           );
         } else if (state is AppointmentLoadSuccess) {
-          final appointments = state.appointments;
-          final filteredAppointments = getFilteredAppointments(appointments);
+          final allAppointments = state.appointments;
+          final filteredAppointments = getFilteredAppointments(allAppointments);
+          final todayAppointments = getTodayAppointments(allAppointments);
+
           final confirmed = filteredAppointments.where((a) => a.status == 'confirmed').length;
           final pending = filteredAppointments.where((a) => a.status == 'pending').length;
           final cancelled = filteredAppointments.where((a) => a.status == 'cancelled').length;
-          final todayAppointments = getTodayAppointments(appointments);
+
           final screenWidth = MediaQuery.of(context).size.width;
 
           return Scaffold(
             backgroundColor: const Color(0xFFF3F4F6),
             body: screenWidth < 800
-                ? _buildSingleColumn(appointments, filteredAppointments, todayAppointments, confirmed, pending, cancelled, screenWidth)
-                : _buildDualColumn(appointments, filteredAppointments, todayAppointments, confirmed, pending, cancelled, screenWidth),
+                ? _buildSingleColumn(
+                    allAppointments,
+                    filteredAppointments,
+                    todayAppointments,
+                    confirmed,
+                    pending,
+                    cancelled,
+                    screenWidth,
+                  )
+                : _buildDualColumn(
+                    allAppointments,
+                    filteredAppointments,
+                    todayAppointments,
+                    confirmed,
+                    pending,
+                    cancelled,
+                    screenWidth,
+                  ),
           );
         } else if (state is AppointmentOperationFailure) {
           return Scaffold(
@@ -233,73 +446,38 @@ class _AppointmentPageState extends State<AppointmentPage> {
 
   Widget _buildDualColumn(List<Appointment> all, List<Appointment> filtered, List<Appointment> todayApps,
       int confirmed, int pending, int cancelled, double width) {
-    // Responsive: stack vertically if width <= 900
-    if (width <= 900) {
-      return Column(
-        children: [
-          _buildHeader(all, filtered, todayApps, confirmed, pending, cancelled, width, false),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  Container(
-                    color: Colors.white,
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      children: [
-                        _buildCalendarHeader(),
-                        const SizedBox(height: 16),
-                        _buildCalendarGrid(all),
-                        const SizedBox(height: 24),
-                        _buildQuickActions(),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    color: const Color(0xFFF9FAFB),
-                    padding: const EdgeInsets.all(24),
-                    child: _buildAppointmentsList(todayApps),
-                  ),
-                ],
+    return Column(
+      children: [
+        _buildHeader(all, filtered, todayApps, confirmed, pending, cancelled, width, false),
+        Expanded(
+          child: Row(
+            children: [
+              Container(
+                width: 300,
+                color: Colors.white,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    _buildCalendarHeader(),
+                    const SizedBox(height: 16),
+                    Expanded(child: _buildCalendarGrid(all)),
+                    const SizedBox(height: 24),
+                    _buildQuickActions(),
+                  ],
+                ),
               ),
-            ),
-          ),
-        ],
-      );
-    } else {
-      return Column(
-        children: [
-          _buildHeader(all, filtered, todayApps, confirmed, pending, cancelled, width, false),
-          Expanded(
-            child: Row(
-              children: [
-                Container(
-                  width: 300,
-                  color: Colors.white,
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      _buildCalendarHeader(),
-                      const SizedBox(height: 16),
-                      Expanded(child: _buildCalendarGrid(all)),
-                      const SizedBox(height: 24),
-                      _buildQuickActions(),
-                    ],
-                  ),
+              Expanded(
+                child: Container(
+                  color: const Color(0xFFF9FAFB),
+                  padding: const EdgeInsets.all(24),
+                  child: _buildAppointmentsList(todayApps),
                 ),
-                Expanded(
-                  child: Container(
-                    color: const Color(0xFFF9FAFB),
-                    padding: const EdgeInsets.all(24),
-                    child: _buildAppointmentsList(todayApps),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      );
-    }
+        ),
+      ],
+    );
   }
 
   Widget _buildHeader(List<Appointment> all, List<Appointment> filtered, List<Appointment> todayApps,
@@ -337,7 +515,6 @@ class _AppointmentPageState extends State<AppointmentPage> {
                     _buildModeButton('Semaine'),
                     _buildModeButton('Mois'),
                   ],
-                  // Doctor filter REMOVED from here
                   if (width > 1050)
                     ElevatedButton.icon(
                       onPressed: () => showTotalAppointmentsDialog(all),
@@ -396,28 +573,31 @@ class _AppointmentPageState extends State<AppointmentPage> {
     );
   }
 
- Widget _buildDoctorFilterDropdown() {
-  return DropdownButton<int?>(
-    value: selectedFilterDoctorId,
-    hint: const Text('Tous les médecins'),
-    items: [
-      const DropdownMenuItem<int?>(value: null, child: Text('Tous les médecins')),
-      ...doctors.map((doc) {
-        final name = '${doc['first_name']} ${doc['last_name']}'.trim(); // ← Removed "Dr."
-        return DropdownMenuItem<int?>(value: doc['id'] as int, child: Text(name));
-      }).toList(),
-    ],
-    onChanged: (value) {
-      setState(() {
-        selectedFilterDoctorId = value;
-      });
-    },
-    style: const TextStyle(color: Color(0xFF111827), fontSize: 14),
-    dropdownColor: Colors.white,
-    icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF3B82F6)),
-    underline: Container(height: 1, color: const Color(0xFF3B82F6)),
-  );
-}
+  Widget _buildDoctorFilterDropdown() {
+    if (isDoctor) return const SizedBox.shrink();
+
+    return DropdownButton<int?>(
+      value: selectedFilterDoctorId,
+      hint: const Text('Tous les médecins'),
+      items: [
+        const DropdownMenuItem<int?>(value: null, child: Text('Tous les médecins')),
+        ...doctors.map((doc) {
+          final name = '${doc['first_name']} ${doc['last_name']}'.trim();
+          return DropdownMenuItem<int?>(value: doc['id'] as int, child: Text(name));
+        }).toList(),
+      ],
+      onChanged: (value) {
+        setState(() {
+          selectedFilterDoctorId = value;
+        });
+      },
+      style: const TextStyle(color: Color(0xFF111827), fontSize: 14),
+      dropdownColor: Colors.white,
+      icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF3B82F6)),
+      underline: Container(height: 1, color: const Color(0xFF3B82F6)),
+    );
+  }
+
   Widget _buildModeButton(String mode) {
     final isActive = viewMode == mode;
     return ElevatedButton(
@@ -604,7 +784,6 @@ class _AppointmentPageState extends State<AppointmentPage> {
                 ),
               ],
             ),
-            // Doctor filter moved here — above the timeline
             _buildDoctorFilterDropdown(),
           ],
         ),
@@ -657,7 +836,7 @@ class _AppointmentPageState extends State<AppointmentPage> {
             );
           }
 
-          final isSingleDoctor = isSingleDoctorView;
+          final isSingleDoctor = isDoctor || selectedFilterDoctorId != null;
 
           return SizedBox(
             height: 100,
@@ -678,7 +857,7 @@ class _AppointmentPageState extends State<AppointmentPage> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: InkWell(
-                            onTap: () => navigateToAppointmentDetail(apt),
+                            onTap: () => _showStatusChangePopup(apt), // ← Popup instead of detail page
                             child: Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
@@ -717,143 +896,5 @@ class _AppointmentPageState extends State<AppointmentPage> {
         }),
       ),
     );
-  }
-
-  // showPatientListDialog and _getFilterTitle remain the same
-  void showPatientListDialog(String filterType, List<Appointment> allAppointments) {
-    final List<Appointment> appointmentsToShow = filterType == 'all'
-        ? allAppointments
-        : allAppointments.where((a) => a.status == filterType).toList();
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          backgroundColor: Colors.white,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _getFilterTitle(filterType),
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF111827),
-                            ),
-                          ),
-                          Text(
-                            '${appointmentsToShow.length} rendez-vous',
-                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: appointmentsToShow.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.inbox, size: 48, color: Colors.grey[300]),
-                              const SizedBox(height: 12),
-                              Text('Aucun rendez-vous trouvé',
-                                  style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                            ],
-                          ),
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: appointmentsToShow.length,
-                          separatorBuilder: (_, __) => Divider(color: Colors.grey[200], height: 1),
-                          itemBuilder: (context, index) {
-                            final apt = appointmentsToShow[index];
-                            return InkWell(
-                              onTap: () {
-                                Navigator.pop(context);
-                                navigateToAppointmentDetail(apt);
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 4,
-                                      height: 50,
-                                      decoration: BoxDecoration(
-                                        color: filterType == 'all'
-                                            ? AppointmentUtils.getStatusColor(apt.status)
-                                            : AppointmentUtils.getTreatmentColor(apt.procedure),
-                                        borderRadius: BorderRadius.circular(2),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            apt.patientName,
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            '${apt.procedure} • ${apt.time}',
-                                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey[400]),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  String _getFilterTitle(String filterType) {
-    switch (filterType) {
-      case 'all':
-        return 'Tous les rendez-vous';
-      case 'confirmed':
-        return 'Rendez-vous confirmés';
-      case 'pending':
-        return 'Rendez-vous en attente';
-      case 'cancelled':
-        return 'Rendez-vous annulés';
-      default:
-        return 'Rendez-vous';
-    }
   }
 }
