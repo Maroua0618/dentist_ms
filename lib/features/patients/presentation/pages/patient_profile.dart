@@ -5,6 +5,15 @@ import 'package:dentist_ms/features/patients/bloc/patient_bloc.dart';
 import 'package:dentist_ms/features/patients/bloc/patient_event.dart';
 import 'package:dentist_ms/features/patients/bloc/patient_state.dart';
 import 'package:dentist_ms/features/patients/models/patient.dart';
+import 'package:dentist_ms/features/appointments/bloc/appointment_bloc.dart';
+import 'package:dentist_ms/features/appointments/presentation/utils/appointment_utils.dart';
+import 'package:dentist_ms/features/appointments/presentation/pages/appointment_detail_page.dart';
+import 'package:dentist_ms/features/appointments/presentation/dialogs/schedule_appointment_dialog.dart';
+import 'package:dentist_ms/features/patients/presentation/dialogs/add_medical_record_dialog.dart';
+import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'prescription_details_page.dart';
+import 'package:flutter/services.dart';
 
 // ============ COLORS (LIGHT THEME) ============
 class AppColors {
@@ -117,12 +126,117 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    // Ensure appointments are loaded so UpcomingTab can read them
+    try {
+      context.read<AppointmentBloc>().add(LoadAppointments());
+    } catch (_) {}
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _reloadPatientDetails() async {
+    final id = widget.patient['id'];
+    if (id == null) return;
+
+    try {
+      final resp = await Supabase.instance.client
+          .from('patients')
+          .select(
+            '*, prescriptions(*, prescription_items(*), doctor:users(first_name,last_name)), patient_allergies(*, allergy:allergies(*)), patient_treatments(*, treatment:treatments(*), doctor:users(first_name,last_name))',
+          )
+          .eq('id', id)
+          .maybeSingle();
+
+      if (resp == null) return;
+
+      final List<dynamic> treatments =
+          resp['patient_treatments'] as List<dynamic>? ?? [];
+      final List<dynamic> prescriptions =
+          resp['prescriptions'] as List<dynamic>? ?? [];
+      final List<dynamic> pas =
+          resp['patient_allergies'] as List<dynamic>? ?? [];
+
+      setState(() {
+        widget.patient['prescriptions'] = prescriptions.map((p) {
+          final pr = p as Map<String, dynamic>;
+          final doctor = pr['doctor'];
+          return {
+            'id': pr['id'],
+            'title':
+                (pr['prescription_items'] as List<dynamic>?)
+                    ?.map((i) => i['medication_name'])
+                    .where((e) => e != null)
+                    .join(', ') ??
+                'Prescription',
+            'date': pr['issued_at'],
+            'desc': pr['notes'],
+            'doctor': doctor != null
+                ? '${doctor['first_name'] ?? ''} ${doctor['last_name'] ?? ''}'
+                      .trim()
+                : 'Unknown',
+            'items': pr['prescription_items'] ?? [],
+          };
+        }).toList();
+
+        widget.patient['dentalHistory'] = treatments.map((t) {
+          final tr = t as Map<String, dynamic>;
+          final doctor = tr['doctor'];
+          return {
+            'id': tr['id'],
+            'title': tr['treatment'] != null
+                ? tr['treatment']['name']
+                : 'Procedure',
+            'date': tr['session_date'],
+            'desc': tr['notes'],
+            'doctor': doctor != null
+                ? '${doctor['first_name'] ?? ''} ${doctor['last_name'] ?? ''}'
+                      .trim()
+                : 'Unknown',
+          };
+        }).toList();
+
+        widget.patient['allergies'] = pas.map((pa) {
+          final map = pa as Map<String, dynamic>;
+          final allergy = map['allergy'];
+          final notes = map['notes']?.toString() ?? '';
+          String severity = '';
+          String reaction = '';
+          if (notes.isNotEmpty) {
+            final parts = notes.split('\n');
+            if (parts.isNotEmpty)
+              severity = parts.first.replaceFirst('Severity: ', '');
+            if (parts.length > 1)
+              reaction = parts
+                  .sublist(1)
+                  .join('\n')
+                  .replaceFirst('Reaction: ', '');
+          }
+          return {
+            'id': map['id'],
+            'title': allergy != null ? allergy['name'] : '',
+            'severity': severity,
+            'desc': reaction,
+          };
+        }).toList();
+
+        widget.patient['stats'] = {
+          'visits': treatments.length,
+          'lastVisit': treatments.isNotEmpty
+              ? treatments.last['session_date']
+              : null,
+          'dentist': treatments.isNotEmpty && treatments.last['doctor'] != null
+              ? '${treatments.last['doctor']['first_name'] ?? ''} ${treatments.last['doctor']['last_name'] ?? ''}'
+                    .trim()
+              : null,
+        };
+      });
+    } catch (e) {
+      // ignore for now - do not crash the UI
+    }
   }
 
   void _handleQuickAction(String actionName) {
@@ -133,6 +247,110 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
 
     if (actionName == 'Delete Patient') {
       _confirmDelete();
+      return;
+    }
+
+    if (actionName == 'Add Appointment') {
+      // Build a Patient instance to prefill the dialog
+      final idValue = widget.patient['id'];
+      int? idInt;
+      if (idValue != null) {
+        if (idValue is int) {
+          idInt = idValue;
+        } else {
+          idInt = int.tryParse(idValue.toString());
+        }
+      }
+
+      final fullName = widget.patient['name']?.toString() ?? '';
+      final parts = fullName.split(RegExp('\\s+'));
+      final firstName = parts.isNotEmpty ? parts.first : '';
+      final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+
+      final preselected = Patient(
+        id: idInt,
+        firstName: firstName,
+        lastName: lastName,
+      );
+
+      showDialog(
+        context: context,
+        builder: (_) =>
+            ScheduleAppointmentDialog(preselectedPatient: preselected),
+      );
+
+      return;
+    }
+
+    if (actionName == 'Add Medical Record') {
+      // Build a Patient instance to prefill the dialog
+      final idValue = widget.patient['id'];
+      int? idInt;
+      if (idValue != null) {
+        if (idValue is int) {
+          idInt = idValue;
+        } else {
+          idInt = int.tryParse(idValue.toString());
+        }
+      }
+
+      final fullName = widget.patient['name']?.toString() ?? '';
+      final parts = fullName.split(RegExp('\\s+'));
+      final firstName = parts.isNotEmpty ? parts.first : '';
+      final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+
+      final preselected = Patient(
+        id: idInt,
+        firstName: firstName,
+        lastName: lastName,
+      );
+
+      showDialog(
+        context: context,
+        builder: (_) => AddMedicalRecordDialog(preselectedPatient: preselected),
+      ).then((result) {
+        if (!mounted) return;
+        if (result != null && result is Map<String, dynamic>) {
+          final type = result['type'] as String? ?? 'procedure';
+
+          try {
+            if (type == 'procedure') {
+              final List<dynamic> dentalHistory =
+                  (widget.patient['dentalHistory'] as List<dynamic>?) ?? [];
+              dentalHistory.insert(0, result);
+              widget.patient['dentalHistory'] = dentalHistory;
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Procedure added')));
+            } else if (type == 'prescription') {
+              final List<dynamic> prescriptions =
+                  (widget.patient['prescriptions'] as List<dynamic>?) ?? [];
+              prescriptions.insert(0, result);
+              widget.patient['prescriptions'] = prescriptions;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Prescription added')),
+              );
+            } else if (type == 'allergy') {
+              final List<dynamic> allergies =
+                  (widget.patient['allergies'] as List<dynamic>?) ?? [];
+              allergies.insert(0, result);
+              widget.patient['allergies'] = allergies;
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Allergy added')));
+            }
+
+            setState(() {});
+            context.read<PatientBloc>().add(LoadPatients());
+
+            // Refresh full patient details from server to ensure permanency
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _reloadPatientDetails();
+            });
+          } catch (_) {}
+        }
+      });
+
       return;
     }
 
@@ -202,14 +420,13 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Save failed: ${state.message}')),
           );
-
         }
 
         if (state is PatientsLoadSuccess && _awaitingDelete) {
           setState(() => _awaitingDelete = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Patient deleted')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Patient deleted')));
         } else if (state is PatientsOperationFailure && _awaitingDelete) {
           setState(() => _awaitingDelete = false);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -696,9 +913,14 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.cardBackground,
         title: const Text('Delete Patient', style: AppTextStyles.sectionTitle),
-        content: const Text('Are you sure you want to delete this patient? This action cannot be undone.'),
+        content: const Text(
+          'Are you sure you want to delete this patient? This action cannot be undone.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
@@ -709,16 +931,22 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
               int? idInt;
               if (idValue == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Cannot delete: patient has no id')),
+                  const SnackBar(
+                    content: Text('Cannot delete: patient has no id'),
+                  ),
                 );
                 return;
               }
-              if (idValue is int) idInt = idValue;
-              else idInt = int.tryParse(idValue.toString());
+              if (idValue is int)
+                idInt = idValue;
+              else
+                idInt = int.tryParse(idValue.toString());
 
               if (idInt == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Cannot delete: invalid patient id')),
+                  const SnackBar(
+                    content: Text('Cannot delete: invalid patient id'),
+                  ),
                 );
                 return;
               }
@@ -1038,6 +1266,17 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
   }
 
   Widget _buildMedicalRecords(List<dynamic> history) {
+    // Determine numeric patient id for upcoming appointments
+    final dynamic _rawPatientIdForRecords = widget.patient['id'];
+    int? patientInt;
+    if (_rawPatientIdForRecords != null) {
+      if (_rawPatientIdForRecords is int) {
+        patientInt = _rawPatientIdForRecords;
+      } else {
+        patientInt = int.tryParse(_rawPatientIdForRecords.toString());
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -1122,9 +1361,16 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
               physics: const BouncingScrollPhysics(),
               children: [
                 DentalHistoryTab(records: history),
-                const PrescriptionsTab(),
-                const AllergiesTab(),
-                const UpcomingTab(),
+                PrescriptionsTab(
+                  prescriptions:
+                      (widget.patient['prescriptions'] as List<dynamic>?) ?? [],
+                  patientName: widget.patient['name'] ?? 'Unknown Patient',
+                ),
+                AllergiesTab(
+                  allergies:
+                      (widget.patient['allergies'] as List<dynamic>?) ?? [],
+                ),
+                UpcomingTab(patientId: patientInt),
               ],
             ),
           ),
@@ -1222,70 +1468,296 @@ class DentalHistoryTab extends StatelessWidget {
 }
 
 class PrescriptionsTab extends StatelessWidget {
-  const PrescriptionsTab({super.key});
+  final List<dynamic> prescriptions;
+  final String patientName;
+  const PrescriptionsTab({
+    super.key,
+    required this.prescriptions,
+    required this.patientName,
+  });
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(
-          color: AppColors.borderColor,
-          style: BorderStyle.solid,
+    if (prescriptions.isEmpty) {
+      return Container(
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+          border: Border.all(
+            color: AppColors.borderColor,
+            style: BorderStyle.solid,
+          ),
         ),
-      ),
-      child: const Center(
-        child: Text(
-          "Prescriptions Content Goes Here",
-          style: AppTextStyles.bodyTextSecondary,
+        child: const Center(
+          child: Text(
+            "No prescriptions",
+            style: AppTextStyles.bodyTextSecondary,
+          ),
         ),
-      ),
+      );
+    }
+
+    return ListView.separated(
+      itemCount: prescriptions.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      padding: const EdgeInsets.all(12),
+      itemBuilder: (context, index) {
+        final p = prescriptions[index];
+        return InkWell(
+          onTap: () {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              showDialog(
+                context: context,
+                builder: (_) => PrescriptionDetailsPage(
+                  prescription: p as Map<String, dynamic>,
+                  patientName: patientName,
+                ),
+              );
+            });
+          },
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+              border: Border.all(color: AppColors.borderColor),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  p['title'] ?? 'Prescription',
+                  style: AppTextStyles.bodyText.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Prescribed: ${p['doctor'] ?? 'Unknown'} • ${p['date'] ?? ''}',
+                  style: AppTextStyles.smallText,
+                ),
+                if (p['desc'] != null && (p['desc'] as String).isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(p['desc'], style: AppTextStyles.bodyTextSecondary),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
 
 class AllergiesTab extends StatelessWidget {
-  const AllergiesTab({super.key});
+  final List<dynamic> allergies;
+  const AllergiesTab({super.key, required this.allergies});
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(
-          color: AppColors.borderColor,
-          style: BorderStyle.solid,
+    if (allergies.isEmpty) {
+      return Container(
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+          border: Border.all(
+            color: AppColors.borderColor,
+            style: BorderStyle.solid,
+          ),
         ),
-      ),
-      child: const Center(
-        child: Text(
-          "Allergies Content Goes Here",
-          style: AppTextStyles.bodyTextSecondary,
+        child: const Center(
+          child: Text(
+            "No allergies registered",
+            style: AppTextStyles.bodyTextSecondary,
+          ),
         ),
-      ),
+      );
+    }
+
+    return ListView.separated(
+      itemCount: allergies.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      padding: const EdgeInsets.all(12),
+      itemBuilder: (context, index) {
+        final a = allergies[index];
+        final title =
+            a['title'] ??
+            a['allergy_name'] ??
+            (a['patient_allergy']?['allergy_name'] ?? 'Allergy');
+        final severity =
+            a['severity'] ?? (a['patient_allergy']?['notes'] ?? '');
+        final desc = a['desc'] ?? (a['patient_allergy']?['notes'] ?? '');
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+            border: Border.all(color: AppColors.borderColor),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppTextStyles.bodyText.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 6),
+              if (severity != null && (severity as String).isNotEmpty)
+                Text('Severity: $severity', style: AppTextStyles.smallText),
+              if (desc != null && (desc as String).isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(desc, style: AppTextStyles.bodyTextSecondary),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }
 
 class UpcomingTab extends StatelessWidget {
-  const UpcomingTab({super.key});
+  final int? patientId;
+  const UpcomingTab({super.key, required this.patientId});
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(
-          color: AppColors.borderColor,
-          style: BorderStyle.solid,
+    if (patientId == null) {
+      return Container(
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+          border: Border.all(
+            color: AppColors.borderColor,
+            style: BorderStyle.solid,
+          ),
         ),
-      ),
-      child: const Center(
-        child: Text(
-          "Upcoming Appointments Content Goes Here",
-          style: AppTextStyles.bodyTextSecondary,
+        child: const Center(
+          child: Text(
+            "No patient ID available for upcoming appointments",
+            style: AppTextStyles.bodyTextSecondary,
+          ),
         ),
-      ),
+      );
+    }
+
+    return BlocBuilder<AppointmentBloc, AppointmentState>(
+      builder: (context, state) {
+        if (state is AppointmentLoading) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (state is AppointmentLoadSuccess) {
+          final now = DateTime.now();
+          final upcoming =
+              state.appointments
+                  .where(
+                    (a) =>
+                        a.patientId == patientId &&
+                        a.status != 'cancelled' &&
+                        a.appointmentDate.isAfter(now),
+                  )
+                  .toList()
+                ..sort(
+                  (a, b) => a.appointmentDate.compareTo(b.appointmentDate),
+                );
+
+          if (upcoming.isEmpty) {
+            return Container(
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+                border: Border.all(
+                  color: AppColors.borderColor,
+                  style: BorderStyle.solid,
+                ),
+              ),
+              child: const Center(
+                child: Text(
+                  "No upcoming appointments",
+                  style: AppTextStyles.bodyTextSecondary,
+                ),
+              ),
+            );
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.all(12),
+            itemCount: upcoming.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final apt = upcoming[index];
+              return InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AppointmentDetailPage(
+                        appointment: apt,
+                        onBack: () => context.read<AppointmentBloc>().add(
+                          LoadAppointments(),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+                    border: Border.all(color: AppColors.borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: AppointmentUtils.getStatusColor(apt.status),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              apt.procedure,
+                              style: AppTextStyles.bodyText.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '${DateFormat.yMMMMd().format(apt.appointmentDate)} • ${apt.time} • ${apt.doctorName}',
+                              style: AppTextStyles.smallText,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Chip(
+                        label: Text(apt.status.toUpperCase()),
+                        backgroundColor: AppointmentUtils.getStatusColor(
+                          apt.status,
+                        ).withOpacity(0.12),
+                        labelStyle: AppTextStyles.smallText.copyWith(
+                          color: AppointmentUtils.getStatusColor(apt.status),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        } else if (state is AppointmentOperationFailure) {
+          return Center(
+            child: Text('Failed to load appointments: ${state.error}'),
+          );
+        }
+
+        return const Center(child: Text('No appointments available'));
+      },
     );
   }
 }
