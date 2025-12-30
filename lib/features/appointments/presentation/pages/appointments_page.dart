@@ -7,6 +7,7 @@ import '../utils/appointment_utils.dart';
 import 'total_appointments_dialog.dart';
 import '../dialogs/schedule_appointment_dialog.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'appointment_detail_page.dart';
 
 class AppointmentPage extends StatefulWidget {
   const AppointmentPage({super.key});
@@ -275,6 +276,17 @@ class _AppointmentPageState extends State<AppointmentPage> {
         return 'Rendez-vous';
     }
   }
+  void navigateToAppointmentDetail(Appointment appointment) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => AppointmentDetailPage(
+        appointment: appointment,
+        onBack: () => context.read<AppointmentBloc>().add(LoadAppointments()),
+      ),
+    ),
+  );
+}
 
   // NEW: Small popup for changing status
   void _showStatusChangePopup(Appointment apt) {
@@ -804,6 +816,7 @@ class _AppointmentPageState extends State<AppointmentPage> {
       ],
     );
   }
+  
 
   Widget _buildTimelineView(List<Appointment> appointments) {
     final sorted = List<Appointment>.from(appointments)
@@ -857,7 +870,9 @@ class _AppointmentPageState extends State<AppointmentPage> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: InkWell(
-                            onTap: () => _showStatusChangePopup(apt), // ← Popup instead of detail page
+                            onTap: isDoctor
+    ? () => navigateToAppointmentDetail(apt)  // Doctor → full detail page
+    : () => _showStatusChangePopup(apt),      // Receptionist/Admin → status popup // ← Popup instead of detail page
                             child: Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
