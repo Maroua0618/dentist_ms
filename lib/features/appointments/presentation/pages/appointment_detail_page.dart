@@ -221,7 +221,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
             padding: const EdgeInsets.all(16),
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
                 decoration: BoxDecoration(
                   color: _getStatusColor(currentStatus).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
