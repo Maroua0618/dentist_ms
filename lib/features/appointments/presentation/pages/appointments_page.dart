@@ -441,8 +441,7 @@ class _AppointmentPageState extends State<AppointmentPage> {
                 _buildCalendarHeader(),
                 const SizedBox(height: 16),
                 _buildCalendarGrid(all),
-                const SizedBox(height: 24),
-                _buildQuickActions(),
+                
               ],
             ),
           ),
@@ -473,8 +472,7 @@ class _AppointmentPageState extends State<AppointmentPage> {
                     _buildCalendarHeader(),
                     const SizedBox(height: 16),
                     Expanded(child: _buildCalendarGrid(all)),
-                    const SizedBox(height: 24),
-                    _buildQuickActions(),
+                    
                   ],
                 ),
               ),
@@ -748,33 +746,6 @@ class _AppointmentPageState extends State<AppointmentPage> {
     );
   }
 
-  Widget _buildQuickActions() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Actions rapides',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.search, size: 18),
-            label: const Text('Trouver un créneau'),
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.filter_list, size: 18),
-            label: const Text('Filtrer'),
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildAppointmentsList(List<Appointment> appointments) {
     return Column(
