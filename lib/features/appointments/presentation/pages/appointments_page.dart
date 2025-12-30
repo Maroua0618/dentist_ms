@@ -7,6 +7,7 @@ import '../utils/appointment_utils.dart';
 import 'total_appointments_dialog.dart';
 import '../dialogs/schedule_appointment_dialog.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'appointment_detail_page.dart';
 
 class AppointmentPage extends StatefulWidget {
   const AppointmentPage({super.key});
@@ -275,6 +276,17 @@ class _AppointmentPageState extends State<AppointmentPage> {
         return 'Rendez-vous';
     }
   }
+  void navigateToAppointmentDetail(Appointment appointment) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => AppointmentDetailPage(
+        appointment: appointment,
+        onBack: () => context.read<AppointmentBloc>().add(LoadAppointments()),
+      ),
+    ),
+  );
+}
 
   // NEW: Small popup for changing status
   void _showStatusChangePopup(Appointment apt) {
@@ -429,8 +441,7 @@ class _AppointmentPageState extends State<AppointmentPage> {
                 _buildCalendarHeader(),
                 const SizedBox(height: 16),
                 _buildCalendarGrid(all),
-                const SizedBox(height: 24),
-                _buildQuickActions(),
+                
               ],
             ),
           ),
@@ -461,8 +472,7 @@ class _AppointmentPageState extends State<AppointmentPage> {
                     _buildCalendarHeader(),
                     const SizedBox(height: 16),
                     Expanded(child: _buildCalendarGrid(all)),
-                    const SizedBox(height: 24),
-                    _buildQuickActions(),
+                    
                   ],
                 ),
               ),
@@ -736,33 +746,6 @@ class _AppointmentPageState extends State<AppointmentPage> {
     );
   }
 
-  Widget _buildQuickActions() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Actions rapides',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.search, size: 18),
-            label: const Text('Trouver un créneau'),
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.filter_list, size: 18),
-            label: const Text('Filtrer'),
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildAppointmentsList(List<Appointment> appointments) {
     return Column(
@@ -804,6 +787,7 @@ class _AppointmentPageState extends State<AppointmentPage> {
       ],
     );
   }
+  
 
   Widget _buildTimelineView(List<Appointment> appointments) {
     final sorted = List<Appointment>.from(appointments)
@@ -857,7 +841,9 @@ class _AppointmentPageState extends State<AppointmentPage> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: InkWell(
-                            onTap: () => _showStatusChangePopup(apt), // ← Popup instead of detail page
+                            onTap: isDoctor
+    ? () => navigateToAppointmentDetail(apt)  // Doctor → full detail page
+    : () => _showStatusChangePopup(apt),      // Receptionist/Admin → status popup // ← Popup instead of detail page
                             child: Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(

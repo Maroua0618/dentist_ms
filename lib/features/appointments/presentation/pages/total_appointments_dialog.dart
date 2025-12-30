@@ -226,7 +226,7 @@ class _TotalAppointmentsDialogState extends State<TotalAppointmentsDialog> {
                               Expanded(child: _info('Patient', app.patientName, Icons.person)),
 
                               // Doctor
-                              Expanded(child: _info('Médecin', 'Dr. ${app.doctorName}', Icons.local_hospital)),
+                              Expanded(child: _info('Médecin', ' ${app.doctorName}', Icons.local_hospital)),
 
                               // Date & Time
                               Expanded(
