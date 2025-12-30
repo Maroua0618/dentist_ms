@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/appointment_model.dart';
-import '../services/appointment_service.dart';
 import '../utils/appointment_utils.dart';
 
 class TotalAppointmentsDialog extends StatefulWidget {
-  final AppointmentService service;
+  final List<Appointment> appointments;
 
   const TotalAppointmentsDialog({
     super.key,
-    required this.service,
+    required this.appointments,
   });
 
   @override
@@ -18,10 +17,11 @@ class TotalAppointmentsDialog extends StatefulWidget {
 
 class _TotalAppointmentsDialogState extends State<TotalAppointmentsDialog> {
   late List<AppointmentWithStatus> allAppointments;
+  List<AppointmentWithStatus> filteredAppointments = [];
   String searchQuery = '';
   String sortBy = 'Plus récent';
   int currentPage = 1;
-  final int itemsPerPage = 10;
+  int itemsPerPage = 10;
 
   @override
   void initState() {
@@ -30,35 +30,48 @@ class _TotalAppointmentsDialogState extends State<TotalAppointmentsDialog> {
   }
 
   void _initializeAppointments() {
-    allAppointments = widget.service.getAllAppointments().map((app) {
-      return AppointmentWithStatus(
-        appointment: app,
-        status: _getAppointmentStatus(app),
-      );
+    final now = DateTime.now();
+    allAppointments = widget.appointments.map((app) {
+      final appointmentTime = AppointmentUtils.getAppointmentDateTime(app);
+      final endTime = appointmentTime.add(Duration(minutes: app.duration));
+
+      String status;
+      if (endTime.isBefore(now)) {
+        status = 'Terminé';
+      } else if (appointmentTime.isBefore(now) && endTime.isAfter(now)) {
+        status = 'En cours';
+      } else {
+        status = 'À venir';
+      }
+
+      return AppointmentWithStatus(appointment: app, status: status);
     }).toList();
-    _sortAppointments();
+
+    _sortAndFilter();
   }
 
-  void _sortAppointments() {
+  void _sortAndFilter() {
+    var list = List<AppointmentWithStatus>.from(allAppointments);
+
+    // Search
+    if (searchQuery.isNotEmpty) {
+      list = list.where((item) {
+        return item.appointment.patientName.toLowerCase().contains(searchQuery.toLowerCase()) ||
+            item.appointment.procedure.toLowerCase().contains(searchQuery.toLowerCase()) ||
+            item.appointment.doctorName.toLowerCase().contains(searchQuery.toLowerCase());
+      }).toList();
+    }
+
+    // Sort
     if (sortBy == 'Plus récent') {
-      allAppointments.sort((a, b) => b.appointment.appointmentDate.compareTo(a.appointment.appointmentDate));
-    } else if (sortBy == 'Plus ancien') {
-      allAppointments.sort((a, b) => a.appointment.appointmentDate.compareTo(b.appointment.appointmentDate));
-    }
-  }
-
-  String _getAppointmentStatus(Appointment app) {
-    final now = DateTime(2025, 10, 31, 16, 10, 22);
-    final appointmentTime = AppointmentUtils.getAppointmentDateTime(app);
-    final endTime = appointmentTime.add(Duration(minutes: app.duration));
-
-    if (endTime.isBefore(now)) {
-      return 'Terminé';
-    } else if (appointmentTime.isBefore(now) && endTime.isAfter(now)) {
-      return 'En cours';
+      list.sort((a, b) => b.appointment.appointmentDate.compareTo(a.appointment.appointmentDate));
     } else {
-      return 'À venir';
+      list.sort((a, b) => a.appointment.appointmentDate.compareTo(b.appointment.appointmentDate));
     }
+
+    filteredAppointments = list;
+    currentPage = 1;
+    setState(() {});
   }
 
   Color _getStatusColor(String status) {
@@ -74,289 +87,204 @@ class _TotalAppointmentsDialogState extends State<TotalAppointmentsDialog> {
     }
   }
 
-  List<AppointmentWithStatus> _getFilteredAppointments() {
-    return allAppointments.where((item) {
-      return item.appointment.patientName.toLowerCase().contains(searchQuery.toLowerCase()) ||
-          item.appointment.id.toLowerCase().contains(searchQuery.toLowerCase());
-    }).toList();
-  }
+  int get _totalPages => (filteredAppointments.length / itemsPerPage).ceil();
 
-  int _getTotalPages() {
-    final filtered = _getFilteredAppointments();
-    return (filtered.length / itemsPerPage).ceil();
-  }
-
-  List<AppointmentWithStatus> _getPaginatedAppointments() {
-    final filtered = _getFilteredAppointments();
-    final startIndex = (currentPage - 1) * itemsPerPage;
-    final endIndex = startIndex + itemsPerPage;
-    return filtered.sublist(
-      startIndex,
-      endIndex > filtered.length ? filtered.length : endIndex,
+  List<AppointmentWithStatus> get _paginatedAppointments {
+    final start = (currentPage - 1) * itemsPerPage;
+    final end = start + itemsPerPage;
+    return filteredAppointments.sublist(
+      start,
+      end > filteredAppointments.length ? filteredAppointments.length : end,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final totalCount = allAppointments.length;
     final upcoming = allAppointments.where((a) => a.status == 'À venir').length;
     final inProgress = allAppointments.where((a) => a.status == 'En cours').length;
     final completed = allAppointments.where((a) => a.status == 'Terminé').length;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1800, maxHeight: 950),
+        constraints: const BoxConstraints(maxWidth: 1200, maxHeight: 800),
         child: Column(
           children: [
-            // En-tête - COMPACT
+            // Header
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+              padding: const EdgeInsets.all(32),
+              decoration: const BoxDecoration(
+                color: Color(0xFF3B82F6),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
                         'Total des rendez-vous',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF111827),
-                        ),
+                        style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
-                      const SizedBox(width: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF6B6B),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          '$totalCount',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
+                      const SizedBox(height: 12),
+                      Text(
+                        '${allAppointments.length} rendez-vous au total',
+                        style: const TextStyle(fontSize: 18, color: Colors.white70),
                       ),
                     ],
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, size: 20),
+                    icon: const Icon(Icons.close, color: Colors.white, size: 32),
                     onPressed: () => Navigator.pop(context),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),
             ),
-            // Pastilles de statut et barre de recherche sur la même ligne
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+
+            // Status Pills + Search + Sort
+            Padding(
+              padding: const EdgeInsets.fromLTRB(32, 24, 32, 16),
               child: Row(
                 children: [
-                  // Pastilles de statut
-                  Row(
-                    children: [
-                      _buildStatusPill('À venir', upcoming, const Color(0xFF8B5CF6)),
-                      const SizedBox(width: 12),
-                      _buildStatusPill('En cours', inProgress, const Color(0xFF3B82F6)),
-                      const SizedBox(width: 12),
-                      _buildStatusPill('Terminé', completed, const Color(0xFF10B981)),
-                    ],
-                  ),
-                  const SizedBox(width: 20),
-                  // Barre de recherche - PLUS GRANDE
+                  _buildStatusPill('À venir', upcoming, const Color(0xFF8B5CF6)),
+                  const SizedBox(width: 16),
+                  _buildStatusPill('En cours', inProgress, const Color(0xFF3B82F6)),
+                  const SizedBox(width: 16),
+                  _buildStatusPill('Terminé', completed, const Color(0xFF10B981)),
+                  const Spacer(),
                   Expanded(
-                    child: Container(
-                      height: 44,
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey[300]!),
-                        borderRadius: BorderRadius.circular(8),
-                        color: Colors.grey[50],
-                      ),
-                      child: TextField(
-                        onChanged: (value) {
-                          setState(() {
-                            searchQuery = value;
-                            currentPage = 1;
-                          });
-                        },
-                        decoration: InputDecoration(
-                          hintText: 'Rechercher par nom du patient ou ID',
-                          border: InputBorder.none,
-                          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-                          prefixIcon: Icon(Icons.search, color: Colors.grey[400], size: 20),
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
+                    flex: 2,
+                    child: TextField(
+                      onChanged: (value) {
+                        searchQuery = value;
+                        _sortAndFilter();
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Rechercher patient, médecin, traitement...',
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        filled: true,
+                        fillColor: Colors.grey[50],
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  // Bouton de tri
-                  Container(
-                    height: 44,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey[300]!),
-                      borderRadius: BorderRadius.circular(8),
-                      color: Colors.grey[50],
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.sort, color: Colors.grey[600], size: 20),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Tri:',
-                          style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
-                        ),
-                        const SizedBox(width: 4),
-                        DropdownButton<String>(
-                          value: sortBy,
-                          underline: const SizedBox(),
-                          style: const TextStyle(color: Color(0xFF111827), fontSize: 13, fontWeight: FontWeight.w600),
-                          items: ['Plus récent', 'Plus ancien'].map((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                          onChanged: (String? value) {
-                            if (value != null) {
-                              setState(() {
-                                sortBy = value;
-                                _sortAppointments();
-                              });
-                            }
-                          },
-                        ),
-                      ],
-                    ),
+                  const SizedBox(width: 16),
+                  DropdownButton<String>(
+                    value: sortBy,
+                    items: ['Plus récent', 'Plus ancien'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        sortBy = value;
+                        _sortAndFilter();
+                      }
+                    },
                   ),
                 ],
               ),
             ),
-            Divider(color: Colors.grey[200], height: 1),
-            // Tableau - PLEIN ESPACE
+
+            // Appointments List (Cards)
             Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SingleChildScrollView(
-                  child: _buildTable(),
-                ),
-              ),
+              child: filteredAppointments.isEmpty
+                  ? Center(
+                      child: Text('Aucun rendez-vous trouvé', style: TextStyle(fontSize: 18, color: Colors.grey[600])),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      itemCount: _paginatedAppointments.length,
+                      itemBuilder: (context, index) {
+                        final item = _paginatedAppointments[index];
+                        final app = item.appointment;
+                        final time = AppointmentUtils.getAppointmentDateTime(app);
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: index.isEven ? Colors.grey[50] : Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))],
+                          ),
+                          child: Row(
+                            children: [
+                              // Treatment Dot + Name
+                              Column(
+                                children: [
+                                  Container(
+                                    width: 20,
+                                    height: 20,
+                                    decoration: BoxDecoration(color: app.cardColor, shape: BoxShape.circle),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(app.procedure, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                              const SizedBox(width: 40),
+
+                              // Patient
+                              Expanded(child: _info('Patient', app.patientName, Icons.person)),
+
+                              // Doctor
+                              Expanded(child: _info('Médecin', 'Dr. ${app.doctorName}', Icons.local_hospital)),
+
+                              // Date & Time
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Date & Heure', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                                    const SizedBox(height: 8),
+                                    Text(DateFormat('EEE dd MMM').format(app.appointmentDate), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                                    Text(app.time, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF3B82F6))),
+                                  ],
+                                ),
+                              ),
+
+                              // Status
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: _getStatusColor(item.status).withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(30),
+                                  border: Border.all(color: _getStatusColor(item.status)),
+                                ),
+                                child: Text(
+                                  item.status,
+                                  style: TextStyle(color: _getStatusColor(item.status), fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
             ),
-            Divider(color: Colors.grey[200], height: 1),
-            // Pagination - COMPACT
+
+            // Pagination
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.all(24),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  Text('${filteredAppointments.length} résultats'),
                   Row(
                     children: [
-                      const Text(
-                        'Affichage',
-                        style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left),
+                        onPressed: currentPage > 1 ? () => setState(() => currentPage--) : null,
                       ),
-                      const SizedBox(width: 6),
-                      Container(
-                        height: 32,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey[300]!),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: DropdownButton<int>(
-                          value: itemsPerPage,
-                          underline: const SizedBox(),
-                          style: const TextStyle(color: Color(0xFF111827), fontSize: 12, fontWeight: FontWeight.w600),
-                          items: [5, 10, 20, 50].map((int value) {
-                            return DropdownMenuItem<int>(
-                              value: value,
-                              child: Text('$value'),
-                            );
-                          }).toList(),
-                          onChanged: (int? value) {},
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      const Text(
-                        'résultats',
-                        style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: currentPage > 1 ? () => setState(() => currentPage--) : null,
-                        child: Container(
-                          height: 32,
-                          width: 32,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey[300]!),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Icon(
-                            Icons.chevron_left,
-                            color: currentPage > 1 ? Colors.grey[700] : Colors.grey[300],
-                            size: 16,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      for (int i = 1; i <= _getTotalPages(); i++) ...[
-                        GestureDetector(
-                          onTap: () => setState(() => currentPage = i),
-                          child: Container(
-                            height: 32,
-                            width: 32,
-                            decoration: BoxDecoration(
-                              color: currentPage == i ? const Color(0xFF3B82F6) : Colors.transparent,
-                              border: Border.all(
-                                color: currentPage == i ? const Color(0xFF3B82F6) : Colors.grey[300]!,
-                              ),
-                              borderRadius: BorderRadius.circular(4),
+                      ...List.generate(_totalPages, (i) => Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: CircleAvatar(
+                              radius: 16,
+                              backgroundColor: currentPage == i + 1 ? const Color(0xFF3B82F6) : Colors.transparent,
+                              child: Text('${i + 1}', style: TextStyle(color: currentPage == i + 1 ? Colors.white : Colors.black)),
                             ),
-                            child: Center(
-                              child: Text(
-                                '$i',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: currentPage == i ? Colors.white : const Color(0xFF6B7280),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        if (i < _getTotalPages()) const SizedBox(width: 4),
-                      ],
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: currentPage < _getTotalPages() ? () => setState(() => currentPage++) : null,
-                        child: Container(
-                          height: 32,
-                          width: 32,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey[300]!),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Icon(
-                            Icons.chevron_right,
-                            color: currentPage < _getTotalPages() ? Colors.grey[700] : Colors.grey[300],
-                            size: 16,
-                          ),
-                        ),
+                          )),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right),
+                        onPressed: currentPage < _totalPages ? () => setState(() => currentPage++) : null,
                       ),
                     ],
                   ),
@@ -366,191 +294,35 @@ class _TotalAppointmentsDialogState extends State<TotalAppointmentsDialog> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _info(String label, String value, IconData icon) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [Icon(icon, size: 18, color: Colors.grey[600]), const SizedBox(width: 8), Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13))]),
+        const SizedBox(height: 8),
+        Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+      ],
     );
   }
 
   Widget _buildStatusPill(String label, int count, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(color: color.withOpacity(0.15), borderRadius: BorderRadius.circular(30), border: Border.all(color: color)),
       child: Row(
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-          const SizedBox(width: 6),
+          Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              '$count',
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(20)),
+            child: Text('$count', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildTable() {
-    final paginatedAppointments = _getPaginatedAppointments();
-
-    return Table(
-      columnWidths: const {
-        0: FixedColumnWidth(50),
-        1: FixedColumnWidth(140),
-        2: FixedColumnWidth(220),
-        3: FixedColumnWidth(420),
-        4: FixedColumnWidth(150),
-        5: FixedColumnWidth(70),
-      },
-      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-      children: [
-        // En-tête
-        TableRow(
-          decoration: BoxDecoration(color: Colors.grey[100]),
-          children: [
-            _buildTableHeader(''),
-            _buildTableHeader('ID Patient'),
-            _buildTableHeader('Nom du patient'),
-            _buildTableHeader('Date du rendez-vous'),
-            _buildTableHeader('Statut'),
-            _buildTableHeader(''),
-          ],
-        ),
-        // Lignes
-        ...paginatedAppointments.asMap().entries.map((entry) {
-          final item = entry.value;
-          final app = item.appointment;
-          final status = item.status;
-          final appointmentTime = AppointmentUtils.getAppointmentDateTime(app);
-          final endTime = appointmentTime.add(Duration(minutes: app.duration));
-          final dateTimeString =
-              '${DateFormat('dd MMM yyyy, hh:mm a').format(appointmentTime)} à ${DateFormat('hh:mm a').format(endTime)}';
-
-          return TableRow(
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
-              color: entry.key.isEven ? Colors.grey[50] : Colors.white,
-            ),
-            children: [
-              _buildTableCell(
-                Checkbox(
-                  value: false,
-                  onChanged: (value) {},
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-              _buildTableCell(
-                Text(
-                  '#PT${app.id.padLeft(4, '0')}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6B7280)),
-                ),
-              ),
-              _buildTableCell(
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: _getStatusColor(status),
-                      child: Text(
-                        app.patientName[0].toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        app.patientName,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF111827)),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              _buildTableCell(
-                Text(
-                  dateTimeString,
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              _buildTableCell(
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(status).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    status,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: _getStatusColor(status),
-                    ),
-                  ),
-                ),
-              ),
-              _buildTableCell(
-                Center(
-                  child: PopupMenuButton(
-                    itemBuilder: (BuildContext context) {
-                      return [
-                        const PopupMenuItem(child: Text('Modifier')),
-                        const PopupMenuItem(child: Text('Supprimer')),
-                      ];
-                    },
-                    child: Icon(Icons.more_vert, color: Colors.grey[400], size: 16),
-                  ),
-                ),
-              ),
-            ],
-          );
-        }).toList(),
-      ],
-    );
-  }
-
-  Widget _buildTableHeader(String text) {
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: Color(0xFF111827),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTableCell(Widget content) {
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: content,
     );
   }
 }
@@ -559,8 +331,5 @@ class AppointmentWithStatus {
   final Appointment appointment;
   final String status;
 
-  AppointmentWithStatus({
-    required this.appointment,
-    required this.status,
-  });
+  AppointmentWithStatus({required this.appointment, required this.status});
 }

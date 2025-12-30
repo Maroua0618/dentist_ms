@@ -1,7 +1,11 @@
 import 'package:dentist_ms/app.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:dentist_ms/features/auth/bloc/auth_bloc.dart';
 import 'package:dentist_ms/features/auth/bloc/auth_event.dart';
 import 'package:dentist_ms/features/auth/data/auth_repository.dart';
+import 'package:dentist_ms/features/appointments/bloc/appointment_bloc.dart';
+import 'package:dentist_ms/features/appointments/data/appointment_remote.dart';
+import 'package:dentist_ms/features/appointments/repositories/appointment_repository.dart';
 import 'package:dentist_ms/features/patients/bloc/patient_bloc.dart';
 import 'package:dentist_ms/features/patients/data/patient_remote.dart';
 import 'package:dentist_ms/features/patients/repositories/patient_repository.dart';
@@ -12,7 +16,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+await initializeDateFormatting('fr_FR', null);
   // Load environment variables
   await dotenv.load();
   final supabaseUrl = dotenv.env['SUPABASE_URL']!;
@@ -38,6 +42,8 @@ void main() async {
   final patientRepository = SupabasePatientRepository(
     remote: patientRemoteDataSource,
   );
+  final appointmentRemoteDataSource = AppointmentRemoteDataSource(Supabase.instance.client);
+  final appointmentRepository = SupabaseAppointmentRepository(remote: appointmentRemoteDataSource);
 
   runApp(
     MultiRepositoryProvider(
@@ -56,16 +62,20 @@ void main() async {
         providers: [
 
           BlocProvider<AuthBloc>(
-            create: (context) => AuthBloc(
+            create:  (context) => AuthBloc(
               context.read<AuthRepository>(),
             )..add(AuthStarted()),
           ),
-
+          // Feature BLoCs
           BlocProvider<PatientBloc>(
             create: (context) => PatientBloc(
               repository: context.read<SupabasePatientRepository>(),
             ),
           ),
+          BlocProvider<AppointmentBloc>(
+            create: (context) => AppointmentBloc(repository: appointmentRepository),
+          ),
+          // Add other Blocs here as your application grows
         ],
         child: const DentistApp(),
       ),
