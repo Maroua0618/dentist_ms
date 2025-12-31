@@ -40,7 +40,6 @@ class _AddMedicalRecordDialogState extends State<AddMedicalRecordDialog>
       'dosage': '',
       'duration': '',
       'instructions': '',
-      'quantity': '1',
     },
   ];
   String prescriptionNotes = '';
@@ -172,7 +171,6 @@ class _AddMedicalRecordDialogState extends State<AddMedicalRecordDialog>
             'dosage': m['dosage'],
             'duration': m['duration'],
             'instructions': m['instructions'],
-            'quantity': int.tryParse(m['quantity'] ?? '') ?? 1,
           });
         }
 
@@ -445,18 +443,6 @@ class _AddMedicalRecordDialogState extends State<AddMedicalRecordDialog>
                                   ),
                                   const SizedBox(height: 8),
                                   TextFormField(
-                                    initialValue: item['quantity'] ?? '1',
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Quantité',
-                                    ),
-                                    onChanged: (v) => setState(
-                                      () =>
-                                          medicationItems[idx]['quantity'] = v,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  TextFormField(
                                     initialValue: item['dosage'],
                                     decoration: const InputDecoration(
                                       labelText: 'Posologie',
@@ -502,7 +488,6 @@ class _AddMedicalRecordDialogState extends State<AddMedicalRecordDialog>
                                     'dosage': '',
                                     'duration': '',
                                     'instructions': '',
-                                    'quantity': '1',
                                   });
                                 }),
                                 child: const Text('Ajouter un médicament'),
