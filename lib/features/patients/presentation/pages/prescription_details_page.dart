@@ -130,10 +130,9 @@ class PrescriptionDetailsPage extends StatelessWidget {
                       final idx = entry.key + 1;
                       final item = entry.value as Map<String, dynamic>;
                       final medName = item['medication_name'] ?? '';
-                      final qty = item['quantity'] ?? 'N/A';
                       final dosage = item['dosage'] ?? '';
                       final duration = item['duration'] ?? '';
-                      final instr = item['instructions'] ?? '';
+                      final instr = item['instructions'] ?? ''; 
 
                       return Container(
                         key: ValueKey(item['id'] ?? 'med-$idx'),
@@ -165,24 +164,6 @@ class PrescriptionDetailsPage extends StatelessWidget {
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    initialValue: qty.toString(),
-                                    readOnly: true,
-                                    decoration: InputDecoration(
-                                      labelText: 'Quantité',
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      isDense: true,
-                                      contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 12,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
                                 Expanded(
                                   child: TextFormField(
                                     initialValue: dosage.toString(),
