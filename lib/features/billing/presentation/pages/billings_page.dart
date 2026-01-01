@@ -27,11 +27,9 @@ import 'package:dentist_ms/features/billing/bloc/treatment_bloc.dart';
 import 'package:dentist_ms/features/billing/bloc/treatment_event.dart';
 import 'package:dentist_ms/features/billing/bloc/treatment_state.dart';
 import 'package:dentist_ms/features/billing/repositories/payment_repository.dart';
-import 'package:dentist_ms/features/billing/repositories/invoice_repository.dart';
 import 'package:dentist_ms/features/billing/repositories/invoice_item_repository.dart';
 import 'package:dentist_ms/features/billing/repositories/expense_repository.dart';
 import 'package:dentist_ms/features/billing/repositories/treatment_repository.dart';
-import 'package:dentist_ms/features/billing/data/invoice_remote.dart';
 import 'package:dentist_ms/features/billing/data/invoice_item_remote.dart';
 import 'package:dentist_ms/features/billing/data/expense_remote.dart';
 import 'package:dentist_ms/features/billing/data/treatment_remote.dart';
@@ -611,13 +609,7 @@ class BillingsPageWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(
-          create: (context) => InvoiceBloc(
-            repository: SupabaseInvoiceRepository(
-              remote: InvoiceRemoteDataSource(),
-            ),
-          )..add(LoadInvoices()),
-        ),
+        // Use existing InvoiceBloc from the app level instead of creating a new one
         BlocProvider(
           create: (context) => InvoiceItemBloc(
             repository: SupabaseInvoiceItemRepository(

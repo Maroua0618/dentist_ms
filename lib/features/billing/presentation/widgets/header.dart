@@ -5,6 +5,7 @@ import '../../utils/billing_responsive_helper.dart';
 import '../dialogs/add_invoice.dart';
 import '../../bloc/invoice_bloc.dart';
 import '../../bloc/invoice_event.dart';
+import '../../bloc/invoice_state.dart';
 import '../../models/invoice.dart';
 
 class BillingHeader extends StatelessWidget {
@@ -14,22 +15,37 @@ class BillingHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          'Facturation & Factures',
-          style: AppTextStyles.headline1.copyWith(
-            fontSize: responsive.headerFontSize,
+    return BlocListener<InvoiceBloc, InvoiceState>(
+      listener: (context, state) {
+        if (state is InvoicesLoadSuccess) {
+          // Invoice list has been updated successfully
+          // The navigation bar will automatically update via BlocBuilder
+        } else if (state is InvoicesOperationFailure) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erreur: ${state.message}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      },
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Facturation & Factures',
+            style: AppTextStyles.headline1.copyWith(
+              fontSize: responsive.headerFontSize,
+            ),
           ),
-        ),
-        ElevatedButton.icon(
-          onPressed: () => _showAddInvoiceDialog(context),
-          icon: const Icon(Icons.add, size: 20),
-          label: const Text('Nouvelle facture'),
-          style: ElevatedButton.styleFrom(minimumSize: const Size(0, 48)),
-        ),
-      ],
+          ElevatedButton.icon(
+            onPressed: () => _showAddInvoiceDialog(context),
+            icon: const Icon(Icons.add, size: 20),
+            label: const Text('Nouvelle facture'),
+            style: ElevatedButton.styleFrom(minimumSize: const Size(0, 48)),
+          ),
+        ],
+      ),
     );
   }
 

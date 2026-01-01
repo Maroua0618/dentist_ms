@@ -3,7 +3,10 @@ import 'package:dentist_ms/features/billing/presentation/pages/billings_page.dar
 import 'package:dentist_ms/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:dentist_ms/features/patients/presentation/pages/patients_page.dart';
 import 'package:dentist_ms/features/settings/presentation/pages/settings_page.dart';
+import 'package:dentist_ms/features/billing/bloc/invoice_bloc.dart';
+import 'package:dentist_ms/features/billing/bloc/invoice_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'app_navbar.dart';
 
 class AdaptiveScaffold extends StatefulWidget {
@@ -46,11 +49,20 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
     return Scaffold(
       body: Row(
         children: [
-          AppNavbar(
-            selectedIndex: _selectedIndex,
-            onItemSelected: (i) => setState(() => _selectedIndex = i),
-            appointmentsN: 20,
-            billingsN: 3,
+          BlocBuilder<InvoiceBloc, InvoiceState>(
+            builder: (context, invoiceState) {
+              int invoiceCount = 0;
+              if (invoiceState is InvoicesLoadSuccess) {
+                invoiceCount = invoiceState.invoices.length;
+              }
+
+              return AppNavbar(
+                selectedIndex: _selectedIndex,
+                onItemSelected: (i) => setState(() => _selectedIndex = i),
+                appointmentsN: 20,
+                billingsN: invoiceCount,
+              );
+            },
           ),
           Expanded(child: _buildContent()),
         ],
