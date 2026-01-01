@@ -64,17 +64,21 @@ class BillingExpensesControls extends StatelessWidget {
 class BillingExpensesTable extends StatelessWidget {
   final List<Map<String, dynamic>> expenses;
   final BillingResponsiveHelper responsive;
+  final bool canEdit;
 
   const BillingExpensesTable({
     Key? key,
     required this.expenses,
     required this.responsive,
+    this.canEdit = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return BillingTableWrapper(
-      headers: ['Date', 'Description', 'Montant', 'Actions'],
+      headers: canEdit
+          ? ['Date', 'Description', 'Montant', 'Actions']
+          : ['Date', 'Description', 'Montant'],
       rows: _buildRows(),
     );
   }
@@ -85,27 +89,27 @@ class BillingExpensesTable extends StatelessWidget {
       final expense = entry.value;
       final isLast = index == expenses.length - 1;
 
-      return BillingTableRow(
-        isLast: isLast,
-        cells: [
-          Text(
-            _formatDate(expense['date']),
-            style: AppTextStyles.body1.copyWith(color: AppColors.textPrimary),
+      final cells = <Widget>[
+        Text(
+          _formatDate(expense['date']),
+          style: AppTextStyles.body1.copyWith(color: AppColors.textPrimary),
+        ),
+        Text(
+          expense['description']?.toString() ?? 'N/A',
+          style: AppTextStyles.body1.copyWith(color: AppColors.textPrimary),
+        ),
+        Text(
+          "-${_formatAmount(expense['amount'])} DA",
+          style: AppTextStyles.body1.copyWith(
+            fontWeight: FontWeight.w600,
+            color: Colors.red,
           ),
-          Text(
-            expense['description']?.toString() ?? 'N/A',
-            style: AppTextStyles.body1.copyWith(color: AppColors.textPrimary),
-          ),
-          Text(
-            "-${_formatAmount(expense['amount'])} DA",
-            style: AppTextStyles.body1.copyWith(
-              fontWeight: FontWeight.w600,
-              color: Colors.red,
-            ),
-          ),
-          _buildActionButtons(expense),
-        ],
-      );
+        ),
+      ];
+      if (canEdit) {
+        cells.add(_buildActionButtons(expense));
+      }
+      return BillingTableRow(isLast: isLast, cells: cells);
     }).toList();
   }
 
