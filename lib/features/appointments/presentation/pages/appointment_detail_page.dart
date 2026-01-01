@@ -1034,7 +1034,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                       ),
                       isDense: true,
                     ),
-                    items: ['confirmed', 'pending', 'cancelled']
+                    items: ['confirmed', 'pending', 'cancelled', 'completed']
                         .map(
                           (status) => DropdownMenuItem(
                             value: status,

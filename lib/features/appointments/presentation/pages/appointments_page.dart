@@ -316,6 +316,7 @@ class _AppointmentPageState extends State<AppointmentPage> {
               items: const [
                 DropdownMenuItem(value: 'pending', child: Text('En attente')),
                 DropdownMenuItem(value: 'confirmed', child: Text('Confirmé')),
+                DropdownMenuItem(value: 'completed', child: Text('Terminé')),
                 DropdownMenuItem(value: 'cancelled', child: Text('Annulé')),
                 DropdownMenuItem(value: 'no-show', child: Text('Non présenté')),
               ],
