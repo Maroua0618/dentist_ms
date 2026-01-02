@@ -171,13 +171,13 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
                     ?.map((i) => i['medication_name'])
                     .where((e) => e != null)
                     .join(', ') ??
-                'Prescription',
+                'Ordonnance',
             'date': pr['issued_at'],
             'desc': pr['notes'],
             'doctor': doctor != null
                 ? '${doctor['first_name'] ?? ''} ${doctor['last_name'] ?? ''}'
                       .trim()
-                : 'Unknown',
+                : 'Inconnu',
             'items': pr['prescription_items'] ?? [],
           };
         }).toList();
@@ -189,13 +189,13 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
             'id': tr['id'],
             'title': tr['treatment'] != null
                 ? tr['treatment']['name']
-                : 'Procedure',
+                : 'Procédure',
             'date': tr['session_date'],
             'desc': tr['notes'],
             'doctor': doctor != null
                 ? '${doctor['first_name'] ?? ''} ${doctor['last_name'] ?? ''}'
                       .trim()
-                : 'Unknown',
+                : 'Inconnu',
           };
         }).toList();
 
@@ -208,12 +208,12 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
           if (notes.isNotEmpty) {
             final parts = notes.split('\n');
             if (parts.isNotEmpty)
-              severity = parts.first.replaceFirst('Severity: ', '');
+              severity = parts.first.replaceFirst('Gravité: ', '');
             if (parts.length > 1)
               reaction = parts
                   .sublist(1)
                   .join('\n')
-                  .replaceFirst('Reaction: ', '');
+                  .replaceFirst('Réaction: ', '');
           }
           return {
             'id': map['id'],
@@ -319,16 +319,16 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
                   (widget.patient['dentalHistory'] as List<dynamic>?) ?? [];
               dentalHistory.insert(0, result);
               widget.patient['dentalHistory'] = dentalHistory;
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('Procedure added')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Procédure ajoutée')),
+              );
             } else if (type == 'prescription') {
               final List<dynamic> prescriptions =
                   (widget.patient['prescriptions'] as List<dynamic>?) ?? [];
               prescriptions.insert(0, result);
               widget.patient['prescriptions'] = prescriptions;
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Prescription added')),
+                const SnackBar(content: Text('Ordonnance ajoutée')),
               );
             } else if (type == 'allergy') {
               final List<dynamic> allergies =
@@ -337,7 +337,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
               widget.patient['allergies'] = allergies;
               ScaffoldMessenger.of(
                 context,
-              ).showSnackBar(const SnackBar(content: Text('Allergy added')));
+              ).showSnackBar(const SnackBar(content: Text('Allergie ajoutée')));
             }
 
             setState(() {});
@@ -366,7 +366,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Close"),
+            child: const Text("Fermer"),
           ),
           ElevatedButton(
             onPressed: () {
@@ -379,7 +379,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
               backgroundColor: AppColors.buttonBlue,
               foregroundColor: Colors.white,
             ),
-            child: const Text("Proceed"),
+            child: const Text("Continuer"),
           ),
         ],
       ),
@@ -390,7 +390,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
   Widget build(BuildContext context) {
     // Extracting variables from the passed Map for cleaner usage below
     // Use '??' to provide fallbacks if DB returns null
-    final String name = widget.patient['name'] ?? 'Unknown Patient';
+    final String name = widget.patient['name'] ?? 'Patient inconnu';
     final String gender = widget.patient['gender'] ?? 'N/A';
     final String age = widget.patient['age']?.toString() ?? '0';
     final String dob = widget.patient['dob'] ?? 'N/A';
@@ -398,12 +398,12 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
 
     final Map<String, dynamic> stats = widget.patient['stats'] ?? {};
     final String totalVisits = stats['visits']?.toString() ?? '0';
-    final String lastVisit = stats['lastVisit'] ?? 'Never';
-    final String primaryDentist = stats['dentist'] ?? 'Unassigned';
+    final String lastVisit = stats['lastVisit'] ?? 'Jamais';
+    final String primaryDentist = stats['dentist'] ?? 'Non assigné';
 
-    final String phone = widget.patient['phone'] ?? 'No phone';
-    final String email = widget.patient['email'] ?? 'No email';
-    final String address = widget.patient['address'] ?? 'No address';
+    final String phone = widget.patient['phone'] ?? 'Pas de téléphone';
+    final String email = widget.patient['email'] ?? 'Pas d\'email';
+    final String address = widget.patient['address'] ?? 'Pas d\'adresse';
 
     // List of history records
     final List<dynamic> dentalHistory = widget.patient['dentalHistory'] ?? [];
@@ -414,11 +414,13 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
           setState(() => _awaitingSave = false);
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('Profile saved')));
+          ).showSnackBar(const SnackBar(content: Text('Profil sauvegardé')));
         } else if (state is PatientsOperationFailure && _awaitingSave) {
           setState(() => _awaitingSave = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Save failed: ${state.message}')),
+            SnackBar(
+              content: Text('Échec de la sauvegarde : ${state.message}'),
+            ),
           );
         }
 
@@ -426,11 +428,13 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
           setState(() => _awaitingDelete = false);
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('Patient deleted')));
+          ).showSnackBar(const SnackBar(content: Text('Patient supprimé')));
         } else if (state is PatientsOperationFailure && _awaitingDelete) {
           setState(() => _awaitingDelete = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Delete failed: ${state.message}')),
+            SnackBar(
+              content: Text('Échec de la suppression : ${state.message}'),
+            ),
           );
         }
       },
@@ -533,7 +537,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
                     color: AppColors.textSecondary,
                   ),
                   const SizedBox(width: 8),
-                  Text('DOB: $dob', style: AppTextStyles.bodyTextSecondary),
+                  Text('DDN : $dob', style: AppTextStyles.bodyTextSecondary),
                   const SizedBox(width: 16),
                   Text("|", style: AppTextStyles.bodyTextSecondary),
                   const SizedBox(width: 16),
@@ -544,7 +548,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
                     color: AppColors.textSecondary,
                   ),
                   const SizedBox(width: 8),
-                  Text('ID: $id', style: AppTextStyles.bodyTextSecondary),
+                  Text('ID : $id', style: AppTextStyles.bodyTextSecondary),
                 ],
               ),
             ],
@@ -589,7 +593,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
               Icon(Icons.arrow_back, size: 18, color: AppColors.textPrimary),
               SizedBox(width: 8),
               Text(
-                'Back to Patients',
+                'Retour aux patients',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -615,7 +619,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
       children: [
         Expanded(
           child: _buildStatCard(
-            'Total Visits',
+            'Visites totales',
             visits,
             "assets/icons/calendar.svg",
             LinearGradient(
@@ -628,7 +632,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
         SizedBox(width: spacing),
         Expanded(
           child: _buildStatCard(
-            'Last Visit',
+            'Dernière visite',
             lastVisit,
             "assets/icons/watch.svg",
             LinearGradient(
@@ -641,7 +645,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
         SizedBox(width: spacing),
         Expanded(
           child: _buildStatCard(
-            'Primary Dentist',
+            'Dentiste principal',
             dentist,
             "assets/icons/doctor.svg",
             LinearGradient(
@@ -767,7 +771,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
               ),
               SizedBox(width: 8),
               Text(
-                'Contact Information',
+                'Informations de contact',
                 style: AppTextStyles.sectionTitle.copyWith(
                   fontWeight: FontWeight.normal,
                 ),
@@ -777,21 +781,21 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
           const SizedBox(height: 20),
           _buildContactItem(
             "assets/icons/phone.svg",
-            'Phone',
+            'Téléphone',
             phone,
             AppColors.accentCyan,
           ),
           const SizedBox(height: 12),
           _buildContactItem(
             "assets/icons/email.svg",
-            'Email',
+            'E-mail',
             email,
             AppColors.accentPurple,
           ),
           const SizedBox(height: 12),
           _buildContactItem(
             "assets/icons/location.svg",
-            'Address',
+            'Adresse',
             address,
             AppColors.accentGreen,
           ),
@@ -871,33 +875,33 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
                 color: AppColors.textPrimary,
               ),
               SizedBox(width: 8),
-              Text('Quick Actions', style: AppTextStyles.sectionTitle),
+              Text('Actions rapides', style: AppTextStyles.sectionTitle),
             ],
           ),
           const SizedBox(height: 16),
           _buildActionButton(
-            'Add Appointment',
+            'Ajouter un rendez-vous',
             Icons.calendar_month,
             true,
             () => _handleQuickAction('Add Appointment'),
           ),
           const SizedBox(height: 10),
           _buildActionButton(
-            'Add Medical Record',
+            'Ajouter un dossier médical',
             Icons.note_add,
             false,
             () => _handleQuickAction('Add Medical Record'),
           ),
           const SizedBox(height: 10),
           _buildActionButton(
-            'Edit Profile',
+            'Modifier le profil',
             Icons.edit_outlined,
             false,
             () => _handleQuickAction('Edit Profile'),
           ),
           const SizedBox(height: 10),
           _buildActionButton(
-            'Delete Patient',
+            'Supprimer le patient',
             Icons.delete_forever,
             false,
             () => _handleQuickAction('Delete Patient'),
@@ -912,14 +916,17 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.cardBackground,
-        title: const Text('Delete Patient', style: AppTextStyles.sectionTitle),
+        title: const Text(
+          'Supprimer le patient',
+          style: AppTextStyles.sectionTitle,
+        ),
         content: const Text(
-          'Are you sure you want to delete this patient? This action cannot be undone.',
+          'Êtes-vous sûr de vouloir supprimer ce patient ? Cette action ne peut pas être annulée.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text('Annuler'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -932,7 +939,9 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
               if (idValue == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Cannot delete: patient has no id'),
+                    content: Text(
+                      'Impossible de supprimer : le patient n\'a pas d\'ID',
+                    ),
                   ),
                 );
                 return;
@@ -945,7 +954,9 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
               if (idInt == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Cannot delete: invalid patient id'),
+                    content: Text(
+                      'Impossible de supprimer : ID de patient invalide',
+                    ),
                   ),
                 );
                 return;
@@ -957,10 +968,10 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
               // navigate back to list immediately; BlocListener will show result
               widget.onBack();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Deleting patient...')),
+                const SnackBar(content: Text('Suppression du patient...')),
               );
             },
-            child: const Text('Delete'),
+            child: const Text('Supprimer'),
           ),
         ],
       ),
@@ -981,7 +992,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
     final addressController = TextEditingController(
       text: widget.patient['address'] ?? '',
     );
-    final List<String> _genders = ['Female', 'Male', 'Other'];
+    final List<String> _genders = ['Femme', 'Homme', 'Autre'];
     final rawGender = (widget.patient['gender'] ?? '').toString();
     String genderValue = _genders.firstWhere(
       (g) => g.toLowerCase() == rawGender.toLowerCase(),
@@ -998,7 +1009,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
           builder: (context, setState) => AlertDialog(
             backgroundColor: AppColors.cardBackground,
             title: const Text(
-              'Edit Profile',
+              'Modifier le profil',
               style: AppTextStyles.sectionTitle,
             ),
             content: SizedBox(
@@ -1012,11 +1023,11 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
                       TextFormField(
                         controller: nameController,
                         decoration: const InputDecoration(
-                          labelText: 'Full name',
+                          labelText: 'Nom complet',
                         ),
                         validator: (v) {
                           if (v == null || v.trim().isEmpty)
-                            return 'Name is required';
+                            return 'Le nom est requis';
                           return null;
                         },
                       ),
@@ -1027,16 +1038,16 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
                             child: DropdownButtonFormField<String>(
                               value: genderValue,
                               decoration: const InputDecoration(
-                                labelText: 'Gender',
+                                labelText: 'Sexe',
                               ),
                               items: const [
                                 DropdownMenuItem(
-                                  value: 'Female',
-                                  child: Text('Female'),
+                                  value: 'Femme',
+                                  child: Text('Femme'),
                                 ),
                                 DropdownMenuItem(
-                                  value: 'Male',
-                                  child: Text('Male'),
+                                  value: 'Homme',
+                                  child: Text('Homme'),
                                 ),
                               ],
                               onChanged: (v) {
@@ -1049,8 +1060,9 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
                             child: TextFormField(
                               controller: dobController,
                               decoration: InputDecoration(
-                                labelText: 'Date of Birth (YYYY-MM-DD)',
-                                hintText: 'YYYY-MM-DD or pick from calendar',
+                                labelText: 'Date de naissance (AAAA-MM-JJ)',
+                                hintText:
+                                    'AAAA-MM-JJ ou sélectionner du calendrier',
                                 suffixIcon: IconButton(
                                   icon: const Icon(Icons.calendar_today),
                                   onPressed: () async {
@@ -1076,7 +1088,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
                               ),
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty)
-                                  return 'Date of Birth is required';
+                                  return 'La date de naissance est requise';
                                 final v = value.trim();
                                 final ok =
                                     RegExp(
@@ -1084,7 +1096,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
                                     ).hasMatch(v) &&
                                     DateTime.tryParse(v) != null;
                                 if (!ok)
-                                  return 'Enter a valid date as YYYY-MM-DD';
+                                  return 'Entrez une date valide au format AAAA-MM-JJ';
                                 return null;
                               },
                             ),
@@ -1094,26 +1106,28 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: phoneController,
-                        decoration: const InputDecoration(labelText: 'Phone'),
+                        decoration: const InputDecoration(
+                          labelText: 'Téléphone',
+                        ),
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: emailController,
-                        decoration: const InputDecoration(labelText: 'Email'),
+                        decoration: const InputDecoration(labelText: 'E-mail'),
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) return null;
                           final emailRegex = RegExp(
                             r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
                           );
                           if (!emailRegex.hasMatch(v.trim()))
-                            return 'Enter a valid email';
+                            return 'Entrez un email valide';
                           return null;
                         },
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: addressController,
-                        decoration: const InputDecoration(labelText: 'Address'),
+                        decoration: const InputDecoration(labelText: 'Adresse'),
                       ),
                     ],
                   ),
@@ -1123,7 +1137,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: const Text('Annuler'),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -1194,14 +1208,16 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
 
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Saving profile...')),
+                      const SnackBar(
+                        content: Text('Enregistrement du profil...'),
+                      ),
                     );
                   }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.buttonBlue,
                 ),
-                child: const Text('Save'),
+                child: const Text('Enregistrer'),
               ),
             ],
           ),
@@ -1302,7 +1318,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
                 color: AppColors.textPrimary,
               ),
               SizedBox(width: 8),
-              Text('Medical Records', style: AppTextStyles.sectionTitle),
+              Text('Dossiers médicaux', style: AppTextStyles.sectionTitle),
             ],
           ),
           const SizedBox(height: 20),
@@ -1344,10 +1360,10 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
                 fontWeight: FontWeight.w500,
               ),
               tabs: const [
-                Tab(text: 'Dental History'),
-                Tab(text: 'Prescriptions'),
+                Tab(text: 'Histo dentaire'),
+                Tab(text: 'Ordonnances'),
                 Tab(text: 'Allergies'),
-                Tab(text: 'Upcoming'),
+                Tab(text: 'À venir'),
               ],
             ),
           ),
@@ -1364,7 +1380,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
                 PrescriptionsTab(
                   prescriptions:
                       (widget.patient['prescriptions'] as List<dynamic>?) ?? [],
-                  patientName: widget.patient['name'] ?? 'Unknown Patient',
+                  patientName: widget.patient['name'] ?? 'Patient inconnu',
                 ),
                 AllergiesTab(
                   allergies:
@@ -1390,7 +1406,10 @@ class DentalHistoryTab extends StatelessWidget {
   Widget build(BuildContext context) {
     if (records.isEmpty) {
       return const Center(
-        child: Text("No records found", style: AppTextStyles.bodyTextSecondary),
+        child: Text(
+          "Aucun enregistrement trouvé",
+          style: AppTextStyles.bodyTextSecondary,
+        ),
       );
     }
 
@@ -1401,10 +1420,10 @@ class DentalHistoryTab extends StatelessWidget {
       itemBuilder: (context, index) {
         final record = records[index];
         return _buildRecordCard(
-          record['title'] ?? 'Unknown Procedure',
+          record['title'] ?? 'Procédure inconnue',
           record['date'] ?? 'N/A',
-          record['desc'] ?? 'No description provided',
-          record['doctor'] ?? 'Unknown Doctor',
+          record['desc'] ?? 'Aucune description fournie',
+          record['doctor'] ?? 'Médecin inconnu',
         );
       },
     );
@@ -1489,7 +1508,7 @@ class PrescriptionsTab extends StatelessWidget {
         ),
         child: const Center(
           child: Text(
-            "No prescriptions",
+            "Pas d'ordonnances",
             style: AppTextStyles.bodyTextSecondary,
           ),
         ),
@@ -1525,14 +1544,14 @@ class PrescriptionsTab extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  p['title'] ?? 'Prescription',
+                  p['title'] ?? 'Ordonnance',
                   style: AppTextStyles.bodyText.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Prescribed: ${p['doctor'] ?? 'Unknown'} • ${p['date'] ?? ''}',
+                  'Prescrit par : ${p['doctor'] ?? 'Inconnu'} • ${p['date'] ?? ''}',
                   style: AppTextStyles.smallText,
                 ),
                 if (p['desc'] != null && (p['desc'] as String).isNotEmpty) ...[
@@ -1565,7 +1584,7 @@ class AllergiesTab extends StatelessWidget {
         ),
         child: const Center(
           child: Text(
-            "No allergies registered",
+            "Aucune allergie enregistrée",
             style: AppTextStyles.bodyTextSecondary,
           ),
         ),
@@ -1581,7 +1600,7 @@ class AllergiesTab extends StatelessWidget {
         final title =
             a['title'] ??
             a['allergy_name'] ??
-            (a['patient_allergy']?['allergy_name'] ?? 'Allergy');
+            (a['patient_allergy']?['allergy_name'] ?? 'Allergie');
         final severity =
             a['severity'] ?? (a['patient_allergy']?['notes'] ?? '');
         final desc = a['desc'] ?? (a['patient_allergy']?['notes'] ?? '');
@@ -1603,7 +1622,7 @@ class AllergiesTab extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               if (severity != null && (severity as String).isNotEmpty)
-                Text('Severity: $severity', style: AppTextStyles.smallText),
+                Text('Gravité : $severity', style: AppTextStyles.smallText),
               if (desc != null && (desc as String).isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(desc, style: AppTextStyles.bodyTextSecondary),
@@ -1634,7 +1653,7 @@ class UpcomingTab extends StatelessWidget {
         ),
         child: const Center(
           child: Text(
-            "No patient ID available for upcoming appointments",
+            "Aucun ID de patient disponible pour les rendez-vous à venir",
             style: AppTextStyles.bodyTextSecondary,
           ),
         ),
@@ -1672,7 +1691,7 @@ class UpcomingTab extends StatelessWidget {
               ),
               child: const Center(
                 child: Text(
-                  "No upcoming appointments",
+                  "Pas de rendez-vous à venir",
                   style: AppTextStyles.bodyTextSecondary,
                 ),
               ),
@@ -1752,11 +1771,13 @@ class UpcomingTab extends StatelessWidget {
           );
         } else if (state is AppointmentOperationFailure) {
           return Center(
-            child: Text('Failed to load appointments: ${state.error}'),
+            child: Text(
+              'Impossible de charger les rendez-vous : ${state.error}',
+            ),
           );
         }
 
-        return const Center(child: Text('No appointments available'));
+        return const Center(child: Text('Aucun rendez-vous disponible'));
       },
     );
   }

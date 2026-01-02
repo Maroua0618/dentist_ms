@@ -1,3 +1,8 @@
+import 'package:dentist_ms/features/patients/bloc/patient_bloc.dart';
+import 'package:dentist_ms/features/patients/bloc/patient_event.dart';
+import 'package:dentist_ms/features/patients/bloc/patient_state.dart';
+import 'package:dentist_ms/features/patients/data/patient_remote.dart';
+import 'package:dentist_ms/features/patients/repositories/patient_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dentist_ms/core/constants/app_colors.dart';
@@ -5,15 +10,12 @@ import 'package:dentist_ms/features/dashboard/bloc/dashboard_bloc.dart';
 import 'package:dentist_ms/features/dashboard/bloc/dashboard_event.dart';
 import 'package:dentist_ms/features/dashboard/bloc/dashboard_state.dart';
 import 'package:dentist_ms/features/dashboard/bloc/revenue_bloc.dart';
-import 'package:dentist_ms/features/dashboard/bloc/patients_bloc.dart';
 import 'package:dentist_ms/features/dashboard/bloc/treatments_bloc.dart';
 import 'package:dentist_ms/features/dashboard/bloc/performance_bloc.dart';
 import 'package:dentist_ms/features/dashboard/data/dashboard_remote.dart';
 import 'package:dentist_ms/features/dashboard/repositories/dashboard_repository.dart';
 import 'package:dentist_ms/features/dashboard/data/revenue_remote.dart';
 import 'package:dentist_ms/features/dashboard/repositories/revenue_repository.dart';
-import 'package:dentist_ms/features/dashboard/data/patients_remote.dart';
-import 'package:dentist_ms/features/dashboard/repositories/patients_repository.dart';
 import 'package:dentist_ms/features/dashboard/data/treatments_remote.dart';
 import 'package:dentist_ms/features/dashboard/repositories/treatments_repository.dart';
 import 'package:dentist_ms/features/dashboard/data/performance_remote.dart';
@@ -21,8 +23,6 @@ import 'package:dentist_ms/features/dashboard/repositories/performance_repositor
 import 'package:dentist_ms/features/dashboard/services/pdf_export_service.dart';
 import 'package:dentist_ms/features/dashboard/bloc/revenue_state.dart';
 import 'package:dentist_ms/features/dashboard/bloc/revenue_event.dart';
-import 'package:dentist_ms/features/dashboard/bloc/patients_state.dart';
-import 'package:dentist_ms/features/dashboard/bloc/patients_event.dart';
 import 'package:dentist_ms/features/dashboard/bloc/treatments_state.dart';
 import 'package:dentist_ms/features/dashboard/bloc/treatments_event.dart';
 import 'package:dentist_ms/features/dashboard/bloc/performance_state.dart';
@@ -57,9 +57,9 @@ class DashboardPage extends StatelessWidget {
           ),
         ),
         BlocProvider(
-          create: (context) => PatientsBloc(
-            repository: SupabasePatientsRepository(
-              remote: PatientsRemoteDataSource(),
+          create: (context) => PatientBloc(
+            repository: SupabasePatientRepository(
+              remote: PatientRemoteDataSource(),
             ),
           ),
         ),
@@ -115,7 +115,7 @@ class _DashboardPageContentState extends State<_DashboardPageContent> {
         : DateTime.now().year;
 
     context.read<RevenueBloc>().add(LoadRevenueChart(year: year));
-    context.read<PatientsBloc>().add(LoadPatientsChart(year: year));
+    context.read<PatientBloc>().add(LoadPatientsChart(year: year));
     context.read<TreatmentsBloc>().add(LoadTreatmentsChart());
     context.read<PerformanceBloc>().add(LoadPerformanceChart(year: year));
   }
@@ -412,7 +412,7 @@ class _DashboardPageContentState extends State<_DashboardPageContent> {
       final currentYear = DateTime.now().year;
 
       context.read<RevenueBloc>().add(LoadRevenueChart(year: currentYear));
-      context.read<PatientsBloc>().add(LoadPatientsChart(year: currentYear));
+      context.read<PatientBloc>().add(LoadPatientsChart(year: currentYear));
       context.read<TreatmentsBloc>().add(LoadTreatmentsChart());
       context.read<PerformanceBloc>().add(
         LoadPerformanceChart(year: currentYear),
@@ -421,14 +421,14 @@ class _DashboardPageContentState extends State<_DashboardPageContent> {
       await Future.delayed(const Duration(milliseconds: 2000));
 
       final revenueState = context.read<RevenueBloc>().state;
-      final patientsState = context.read<PatientsBloc>().state;
+      final patientsState = context.read<PatientBloc>().state;
       final treatmentsState = context.read<TreatmentsBloc>().state;
       final performanceState = context.read<PerformanceBloc>().state;
 
       final revenueData = revenueState is RevenueLoadSuccess
           ? revenueState.chartData
           : null;
-      final patientsData = patientsState is PatientsLoadSuccess
+      final patientsData = patientsState is PatientsLoadSuccessD
           ? patientsState.chartData
           : null;
       final treatmentsData = treatmentsState is TreatmentsLoadSuccess

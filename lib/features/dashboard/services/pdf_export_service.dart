@@ -1,13 +1,11 @@
 import 'dart:io';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:dentist_ms/features/dashboard/models/dashboard_metrics.dart';
 import 'package:dentist_ms/features/dashboard/models/revenue_chart_data.dart';
 import 'package:dentist_ms/features/dashboard/models/patients_chart_data.dart';
 import 'package:dentist_ms/features/dashboard/models/treatments_chart_data.dart';
 import 'package:dentist_ms/features/dashboard/models/performance_chart_data.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
 
 class PdfExportService {
   static Future<void> generateDashboardReport({

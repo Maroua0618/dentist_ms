@@ -1,3 +1,4 @@
+import 'package:dentist_ms/features/dashboard/models/patients_chart_data.dart';
 import 'package:equatable/equatable.dart';
 import 'package:dentist_ms/features/patients/models/patient.dart';
 
@@ -19,6 +20,14 @@ class PatientsLoadSuccess extends PatientState {
 
   @override
   List<Object?> get props => [patients];
+}
+class PatientsLoadSuccessD extends PatientState {
+  final PatientsChartData chartData;
+
+  const PatientsLoadSuccessD(this.chartData);
+
+  @override
+  List<Object?> get props => [chartData];
 }
 
 class PatientsOperationFailure extends PatientState {

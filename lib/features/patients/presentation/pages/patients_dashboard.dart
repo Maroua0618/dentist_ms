@@ -1,5 +1,10 @@
 import 'dart:async';
 import 'package:dentist_ms/core/constants/app_colors.dart';
+import 'package:dentist_ms/features/patients/models/patient_filter.dart';
+import 'package:dentist_ms/features/patients/presentation/utils/patient_export.dart';
+import 'package:dentist_ms/features/patients/presentation/utils/patient_filter_util.dart';
+import 'package:dentist_ms/features/patients/presentation/widgets/filter_dialog.dart';
+import 'package:dentist_ms/features/patients/presentation/widgets/patient_export.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,10 +23,10 @@ class PatientsDashboard extends StatefulWidget {
 }
 
 class _PatientsDashboardState extends State<PatientsDashboard> {
-  var totalPatients = 1;
-  var activePatients = 2145;
-  var newPatients = 127;
-  var balance = 12340;
+  var totalPatients = 0;
+  var activePatients = 0;
+  var newPatients = 0;
+  var balance = 0;
   String _statusValue = 'active';
   String _bloodType = 'O+';
   final _formKey = GlobalKey<FormState>();
@@ -39,7 +44,9 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
   // Search
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  Timer? _searchDebounce; 
+  Timer? _searchDebounce;
+
+  PatientFilter _currentFilter = const PatientFilter();
 
   @override
   void initState() {
@@ -49,6 +56,128 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<PatientBloc>().add(LoadPatients());
     });
+  }
+
+  void _showFilterDialog() async {
+    final filter = await showDialog<PatientFilter>(
+      context: context,
+      builder: (context) => PatientFilterDialog(initialFilter: _currentFilter),
+    );
+
+    if (filter != null) {
+      setState(() => _currentFilter = filter);
+    }
+  }
+
+  void _showExportDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => PatientExportDialog(
+        onExportCSV: _exportToCSV,
+        onExportExcel: _exportToExcel,
+        onExportPDF: _exportToPDF,
+      ),
+    );
+  }
+
+  Future<void> _exportToCSV() async {
+    try {
+      final state = context.read<PatientBloc>().state;
+      if (state is! PatientsLoadSuccess) return;
+
+      final patients = PatientFilterUtil.applyFilters(
+        filterPatients(_searchQuery, state.patients),
+        _currentFilter,
+      );
+
+      final filePath = await PatientExportService.exportToCSV(patients);
+
+      if (mounted) {
+        _showSuccessSnackBar(filePath, 'CSV');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar('Erreur d\'exportation CSV:  $e');
+      }
+    }
+  }
+
+  Future<void> _exportToExcel() async {
+    try {
+      final state = context.read<PatientBloc>().state;
+      if (state is! PatientsLoadSuccess) return;
+
+      final patients = PatientFilterUtil.applyFilters(
+        filterPatients(_searchQuery, state.patients),
+        _currentFilter,
+      );
+
+      final filePath = await PatientExportService.exportToExcel(patients);
+
+      if (mounted) {
+        _showSuccessSnackBar(filePath, 'Excel');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar('Erreur d\'exportation Excel: $e');
+      }
+    }
+  }
+
+  Future<void> _exportToPDF() async {
+    try {
+      final state = context.read<PatientBloc>().state;
+      if (state is! PatientsLoadSuccess) return;
+
+      final patients = PatientFilterUtil.applyFilters(
+        filterPatients(_searchQuery, state.patients),
+        _currentFilter,
+      );
+
+      final filePath = await PatientExportService.exportToPDF(patients);
+
+      if (mounted) {
+        _showSuccessSnackBar(filePath, 'PDF');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar('Erreur d\'exportation PDF: $e');
+      }
+    }
+  }
+
+  void _showSuccessSnackBar(String filePath, String format) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text('$format exporté avec succès')),
+          ],
+        ),
+        backgroundColor: const Color(0xFF10B981),
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(
+          label: 'Ouvrir',
+          textColor: Colors.white,
+          onPressed: () async {
+            await PatientExportService.openFileInExplorer(filePath);
+          },
+        ),
+        duration: const Duration(seconds: 5),
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -81,7 +210,7 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
           // keep balance unchanged
         } else if (state is PatientsOperationFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Operation failed: ${state.message}')),
+            SnackBar(content: Text('L\'opération a échoué : ${state.message}')),
           );
         }
       },
@@ -100,7 +229,7 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Patient Management",
+                            "Gestion des patients",
                             style: TextStyle(
                               fontSize: 26,
                               fontWeight: FontWeight.bold,
@@ -109,7 +238,7 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            "Manage and view all patient records",
+                            "Gérer et consulter tous les dossiers des patients",
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[600],
@@ -146,7 +275,7 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                                     Icon(Icons.add, color: Colors.white),
                                     SizedBox(width: 8),
                                     Text(
-                                      "Add New Patient",
+                                      "Ajouter un patient",
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 16,
@@ -209,25 +338,25 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _buildStatCard(
-                      'Total Patients',
+                      'Total des patients',
                       totalPatients,
                       "assets/icons/person.svg",
                       AppColors.cardBlue,
                     ),
                     _buildStatCard(
-                      'Active Patients',
+                      'Patients actifs',
                       activePatients,
                       "assets/icons/pfp.svg",
                       AppColors.cardGreen,
                     ),
                     _buildStatCard(
-                      'New This Month',
+                      'Nouveau ce mois',
                       newPatients,
                       "assets/icons/plus.svg",
                       AppColors.cardPurple,
                     ),
                     _buildStatCard(
-                      'Pending Balance',
+                      'Solde en attente',
                       balance,
                       "assets/icons/dollar.svg",
                       AppColors.cardOrange,
@@ -253,7 +382,7 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                           ), // Base text size
                           decoration: InputDecoration(
                             hintText:
-                                'Search patients by name, ID, or email...',
+                                'Rechercher des patients par nom, ID ou email...',
                             hintStyle: TextStyle(
                               color: Colors.grey[500],
                               fontSize: 14,
@@ -292,11 +421,14 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                             if (_searchDebounce?.isActive ?? false) {
                               _searchDebounce!.cancel();
                             }
-                            _searchDebounce = Timer(const Duration(milliseconds: 250), () {
-                              setState(() {
-                                _searchQuery = value.trim();
-                              });
-                            });
+                            _searchDebounce = Timer(
+                              const Duration(milliseconds: 250),
+                              () {
+                                setState(() {
+                                  _searchQuery = value.trim();
+                                });
+                              },
+                            );
                           },
                         ),
                       ),
@@ -305,9 +437,9 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
 
                       // Filters Button
                       ElevatedButton.icon(
-                        onPressed: () {},
+                        onPressed: _showFilterDialog,
                         icon: const Icon(Icons.filter_alt_outlined, size: 18),
-                        label: const Text("Filters"),
+                        label: const Text("Filtres"),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: const Color(0xFF1A2332),
@@ -325,9 +457,9 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
 
                       // Export Button
                       ElevatedButton.icon(
-                        onPressed: () {},
+                        onPressed: _showExportDialog,
                         icon: const Icon(Icons.arrow_upward, size: 18),
-                        label: const Text("Export"),
+                        label: const Text("Exporter"),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: const Color(0xFF1A2332),
@@ -375,7 +507,11 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
 
                         if (state is PatientsLoadSuccess) {
                           final patients = state.patients;
-                          final filteredPatients = filterPatients(_searchQuery, patients);
+                          final filteredPatients =
+                              PatientFilterUtil.applyFilters(
+                                filterPatients(_searchQuery, patients),
+                                _currentFilter,
+                              );
 
                           if (filteredPatients.isEmpty) {
                             return SizedBox(
@@ -383,8 +519,8 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                               child: Center(
                                 child: Text(
                                   _searchQuery.isEmpty
-                                      ? 'No patients available'
-                                      : 'No patients match "${_searchQuery}"',
+                                      ? 'Aucun patient disponible'
+                                      : 'Aucun patient ne correspond à "${_searchQuery}"',
                                   style: TextStyle(color: Colors.grey[600]),
                                 ),
                               ),
@@ -402,7 +538,7 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                                     columnSpacing: 24,
                                     horizontalMargin: 16,
                                     dataRowMaxHeight: 80,
-                                    columns: const [ 
+                                    columns: const [
                                       DataColumn(
                                         label: Text(
                                           'Patient',
@@ -469,7 +605,7 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                           return SizedBox(
                             height: 120,
                             child: Center(
-                              child: Text('Failed to load patients'),
+                              child: Text('Échec du chargement des patients'),
                             ),
                           );
                         }
@@ -667,9 +803,9 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
             child: Text(
               status.toUpperCase(),
               style: TextStyle(
-                color: status.toLowerCase() == 'active' 
-                ? AppColors.white
-                : AppColors.textDark,
+                color: status.toLowerCase() == 'active'
+                    ? AppColors.white
+                    : AppColors.textDark,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -808,12 +944,12 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
             mainAxisSize: MainAxisSize.min,
             children: const [
               Text(
-                'Add patient',
+                'Ajouter un patient',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 6),
               Text(
-                'add new patient to the system with their personal and medical information',
+                'Ajouter un nouveau patient au système avec ses informations personnelles et médicales',
                 style: TextStyle(fontSize: 13, color: Colors.black54),
               ),
             ],
@@ -828,22 +964,24 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                   children: [
                     TextFormField(
                       controller: _nameController,
-                      decoration: const InputDecoration(labelText: 'Full name'),
+                      decoration: const InputDecoration(
+                        labelText: 'Nom complet',
+                      ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty)
-                          return 'Name is required';
+                          return 'Le nom est obligatoire';
                         if (value.trim().length < 2)
-                          return 'Enter a valid name';
+                          return 'Entrez un nom valide';
                         return null;
                       },
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
                       controller: _addressController,
-                      decoration: const InputDecoration(labelText: 'Address'),
+                      decoration: const InputDecoration(labelText: 'Adresse'),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty)
-                          return 'Address is required';
+                          return 'L\'adresse est obligatoire';
                         return null;
                       },
                     ),
@@ -853,12 +991,12 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                       decoration: const InputDecoration(labelText: 'Email'),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty)
-                          return 'Email is required';
+                          return 'L\'email est obligatoire';
                         final emailRegex = RegExp(
                           r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
                         );
                         if (!emailRegex.hasMatch(value.trim()))
-                          return 'Enter a valid email';
+                          return 'Entrez un email valide';
                         return null;
                       },
                     ),
@@ -868,7 +1006,7 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                       decoration: const InputDecoration(labelText: 'Contact'),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty)
-                          return 'Contact is required';
+                          return 'Le contact est obligatoire';
                         return null;
                       },
                     ),
@@ -879,11 +1017,11 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                           child: TextFormField(
                             controller: _insuranceProviderController,
                             decoration: const InputDecoration(
-                              labelText: 'Insurance Provider',
+                              labelText: 'Fournisseur d\'assurance',
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty)
-                                return 'Insurance Provider is required';
+                                return 'Le fournisseur d\'assurance est obligatoire';
                               return null;
                             },
                           ),
@@ -893,8 +1031,9 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                           child: TextFormField(
                             controller: _dateOfBirthController,
                             decoration: InputDecoration(
-                              labelText: 'Date of Birth (YYYY-MM-DD)',
-                              hintText: 'YYYY-MM-DD or pick from calendar',
+                              labelText: 'Date de naissance (AAAA-MM-JJ)',
+                              hintText:
+                                  'AAAA-MM-JJ ou choisir dans le calendrier',
                               suffixIcon: IconButton(
                                 icon: const Icon(Icons.calendar_today),
                                 onPressed: () async {
@@ -921,13 +1060,13 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty)
-                                return 'Date of Birth is required';
+                                return 'La date de naissance est obligatoire';
                               final v = value.trim();
                               final ok =
                                   RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(v) &&
                                   DateTime.tryParse(v) != null;
                               if (!ok)
-                                return 'Enter a valid date as YYYY-MM-DD';
+                                return 'Entrez une date valide au format AAAA-MM-JJ';
                               // Note: simple check - YYYY-MM-DD
                               return null;
                             },
@@ -942,16 +1081,16 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                           child: DropdownButtonFormField<String>(
                             initialValue: _genderValue,
                             decoration: const InputDecoration(
-                              labelText: 'Gender',
+                              labelText: 'Genre',
                             ),
                             items: const [
                               DropdownMenuItem(
                                 value: 'Female',
-                                child: Text('Female'),
+                                child: Text('Femme'),
                               ),
                               DropdownMenuItem(
                                 value: 'Male',
-                                child: Text('Male'),
+                                child: Text('Homme'),
                               ),
                             ],
                             onChanged: (v) {
@@ -968,16 +1107,16 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                           child: DropdownButtonFormField<String>(
                             value: _statusValue,
                             decoration: const InputDecoration(
-                              labelText: 'Status',
+                              labelText: 'Statut',
                             ),
                             items: const [
                               DropdownMenuItem(
                                 value: 'active',
-                                child: Text('Active'),
+                                child: Text('Actif'),
                               ),
                               DropdownMenuItem(
                                 value: 'inactive',
-                                child: Text('Inactive'),
+                                child: Text('Inactif'),
                               ),
                             ],
                             onChanged: (v) {
@@ -990,7 +1129,7 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                           child: DropdownButtonFormField<String>(
                             value: _bloodType,
                             decoration: const InputDecoration(
-                              labelText: 'Blood type',
+                              labelText: 'Groupe sanguin',
                             ),
                             items: const [
                               DropdownMenuItem(value: 'O+', child: Text('O+')),
@@ -1049,7 +1188,7 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                 ),
               ),
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: const Text('Annuler'),
             ),
             Container(
               decoration: BoxDecoration(
@@ -1112,12 +1251,12 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                     Navigator.of(context).pop();
                     if (mounted) {
                       ScaffoldMessenger.of(this.context).showSnackBar(
-                        const SnackBar(content: Text('Patient added')),
+                        const SnackBar(content: Text('Patient ajouté')),
                       );
                     }
                   }
                 },
-                child: const Text('Create Patient'),
+                child: const Text('Créer un patient'),
               ),
             ),
           ],

@@ -1,10 +1,10 @@
+import 'package:dentist_ms/features/patients/bloc/patient_bloc.dart';
+import 'package:dentist_ms/features/patients/bloc/patient_event.dart';
+import 'package:dentist_ms/features/patients/bloc/patient_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:dentist_ms/core/constants/app_colors.dart';
-import 'package:dentist_ms/features/dashboard/bloc/patients_bloc.dart';
-import 'package:dentist_ms/features/dashboard/bloc/patients_event.dart';
-import 'package:dentist_ms/features/dashboard/bloc/patients_state.dart';
 import 'package:dentist_ms/features/dashboard/models/patients_chart_data.dart';
 import '../dashboard_constants.dart';
 
@@ -24,7 +24,7 @@ class _PatientsPanelState extends State<PatientsPanel> {
     super.initState();
     WidgetsBinding.instance. addPostFrameCallback((_) {
       if (mounted) {
-        context.read<PatientsBloc>().add(LoadPatientsChart(year: DateTime.now().year));
+        context.read<PatientBloc>().add(LoadPatientsChart(year: DateTime.now().year));
       }
     });
   }
@@ -50,7 +50,7 @@ class _PatientsPanelState extends State<PatientsPanel> {
                 const Text('Acquisition mensuelle de patients', style: TextStyle(color:  kTextSecondary)),
                 const SizedBox(height: 16),
                 Expanded(
-                  child: BlocBuilder<PatientsBloc, PatientsState>(
+                  child: BlocBuilder<PatientBloc, PatientState>(
                     builder:  (context, state) => _buildChart(context, state),
                   ),
                 ),
@@ -63,10 +63,10 @@ class _PatientsPanelState extends State<PatientsPanel> {
     );
   }
 
-  Widget _buildChart(BuildContext context, PatientsState state) {
+  Widget _buildChart(BuildContext context, PatientState state) {
     if (state is PatientsLoadInProgress) return const Center(child: CircularProgressIndicator());
     if (state is PatientsOperationFailure) return Center(child: Text('Erreur: ${state.message}', style: const TextStyle(color:  Colors.red)));
-    if (state is PatientsLoadSuccess) {
+    if (state is PatientsLoadSuccessD) {
       return Container(
         decoration: BoxDecoration(
           color: Colors.white,
