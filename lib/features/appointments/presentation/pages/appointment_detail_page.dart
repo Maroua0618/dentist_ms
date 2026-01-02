@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/appointment_overview_tab.dart';
 import '../widgets/during_appointment_tab.dart';
 import '../widgets/prescriptions_tab.dart';
+import '../widgets/documents_tab.dart';
 import '../widgets/add_prescription_dialog.dart';
 
 class AppointmentDetailPage extends StatefulWidget {
@@ -514,6 +515,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                       selectedTab == 'Pendant le rendez-vous',
                     ),
                     _buildTabButton('Ordonnances', selectedTab == 'Ordonnances'),
+                    _buildTabButton('Documents', selectedTab == 'Documents'),
                   ],
                 ),
               ),
@@ -677,6 +679,8 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
         appointment: appointment,
         onAddPrescription: _showAddPrescriptionDialog,
       );
+    } else if (selectedTab == 'Documents') {
+      return DocumentsTab(appointment: appointment);
     }
     return AppointmentOverviewTab(
       appointment: appointment,

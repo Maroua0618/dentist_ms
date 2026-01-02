@@ -10,26 +10,29 @@ class AppointmentRemoteDataSource {
   Future<List<Appointment>> getAppointments() async {
     final response = await client
         .from('appointments')
-        .select('*, patients(first_name, last_name), users(first_name, last_name, role)')
+        .select(
+          '*, patients(first_name, last_name), doctor:users(first_name, last_name, role)',
+        )
         .order('start_datetime');
 
     return (response as List).map((json) {
       // Patient name
       final patient = json['patients'] as Map<String, dynamic>?;
       final patientName = patient != null
-          ? '${patient['first_name'] ?? ''} ${patient['last_name'] ?? ''}'.trim()
+          ? '${patient['first_name'] ?? ''} ${patient['last_name'] ?? ''}'
+                .trim()
           : 'Unknown Patient';
 
       // Doctor name (from users table join)
-      final doctor = json['users'] as Map<String, dynamic>?;
-      final doctorName = doctor != null && doctor['role'] == 'doctor'
+      final doctor = json['doctor'] as Map<String, dynamic>?;
+      final doctorName = doctor != null
           ? '${doctor['first_name'] ?? ''} ${doctor['last_name'] ?? ''}'.trim()
           : 'Unknown Doctor';
 
       return Appointment.fromJson({
         ...json,
         'patientName': patientName,
-        'doctorName': doctorName,  // NEW
+        'doctorName': doctorName,
       });
     }).toList();
   }
