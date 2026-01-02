@@ -33,3 +33,12 @@ class DeletePatient extends PatientEvent {
   @override
   List<Object?> get props => [patientId];
 }
+class LoadPatientsChart extends PatientEvent {
+  final int year;
+  
+  const LoadPatientsChart({required this.year});
+
+  @override
+  List<Object?> get props => [year];
+}
+class RefreshPatientsChart extends PatientEvent {}

@@ -1,3 +1,4 @@
+import 'package:dentist_ms/features/dashboard/models/patients_chart_data.dart';
 import 'package:dentist_ms/features/patients/data/patient_remote.dart';
 import 'package:dentist_ms/features/patients/models/patient.dart';
 
@@ -7,6 +8,7 @@ abstract class PatientRepository {
   Future<Patient> createPatient(Patient patient);
   Future<Patient> updatePatient(Patient patient);
   Future<void> deletePatient(int id);
+  Future<PatientsChartData> getPatientsChartData({required int year});
 }
 
 /// Implementation using Supabase Remote Data Source
@@ -34,5 +36,10 @@ class SupabasePatientRepository implements PatientRepository {
   @override
   Future<void> deletePatient(int id) async {
     return await _remote.deletePatient(id);
+  }
+
+  @override
+  Future<PatientsChartData> getPatientsChartData({required int year}) async {
+    return await _remote.getPatientsChartData(year: year);
   }
 }

@@ -11,6 +11,37 @@ class PatientBloc extends Bloc<PatientEvent, PatientState> {
     on<AddPatient>(_onAddPatient);
     on<UpdatePatient>(_onUpdatePatient);
     on<DeletePatient>(_onDeletePatient);
+    on<LoadPatientsChart>(_onLoadPatientsChart);
+    on<RefreshPatientsChart>(_onRefreshPatientsChart);
+  }
+
+  Future<void> _onLoadPatientsChart(
+    LoadPatientsChart event,
+    Emitter<PatientState> emit,
+  ) async {
+    emit(PatientsLoadInProgress());
+    try {
+      final chartData = await repository.getPatientsChartData(year: event.year);
+      emit(PatientsLoadSuccessD(chartData));
+    } catch (e) {
+      emit(PatientsOperationFailure(e.toString()));
+    }
+  }
+
+  Future<void> _onRefreshPatientsChart(
+    RefreshPatientsChart event,
+    Emitter<PatientState> emit,
+  ) async {
+    emit(PatientsLoadInProgress());
+    try {
+      final currentYear = DateTime.now().year;
+      final chartData = await repository.getPatientsChartData(
+        year: currentYear,
+      );
+      emit(PatientsLoadSuccessD(chartData));
+    } catch (e) {
+      emit(PatientsOperationFailure(e.toString()));
+    }
   }
 
   Future<void> _onLoadPatients(
@@ -34,16 +65,16 @@ class PatientBloc extends Bloc<PatientEvent, PatientState> {
     // Optimistic UI update or show loading could go here.
     // For simplicity, we keep the previous state visually or show loading if needed.
     // Ideally, we want to stay on the list or show a "saving" indicator.
-    
-    // NOTE: In a real app, you might not want to set LoadInProgress here 
-    // because it wipes the list from the UI. 
+
+    // NOTE: In a real app, you might not want to set LoadInProgress here
+    // because it wipes the list from the UI.
     // But to refresh the list reliably after add:
-    emit(PatientsLoadInProgress()); 
-    
+    emit(PatientsLoadInProgress());
+
     try {
       await repository.createPatient(event.patient);
       // Reload the list to get the new ID and sorted order from DB
-      add(LoadPatients()); 
+      add(LoadPatients());
     } catch (e) {
       emit(PatientsOperationFailure(e.toString()));
     }
