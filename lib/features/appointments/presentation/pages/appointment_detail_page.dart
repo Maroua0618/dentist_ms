@@ -1,8 +1,13 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../bloc/appointment_bloc.dart';
 import '../models/appointment_model.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../widgets/appointment_overview_tab.dart';
+import '../widgets/during_appointment_tab.dart';
+import '../widgets/prescriptions_tab.dart';
+import '../widgets/add_prescription_dialog.dart';
 
 class AppointmentDetailPage extends StatefulWidget {
   final Appointment appointment;
@@ -25,11 +30,50 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
   bool isAppointmentCompleted = false;
   DateTime? appointmentStartTime;
   DateTime? appointmentEndTime;
+  List<Map<String, dynamic>> prescriptions = [];
+  bool isLoadingPrescriptions = false;
 
   @override
   void initState() {
     super.initState();
     appointment = widget.appointment;
+    _loadPrescriptions();
+  }
+
+  Future<void> _loadPrescriptions() async {
+    setState(() => isLoadingPrescriptions = true);
+    try {
+      if (appointment.patientId == null) {
+        debugPrint('⚠️ Patient ID is null, cannot load prescriptions');
+        setState(() => isLoadingPrescriptions = false);
+        return;
+      }
+      
+      debugPrint('🔍 Loading prescriptions for patient_id: ${appointment.patientId}');
+      
+      final response = await Supabase.instance.client
+          .from('prescriptions')
+          .select('*, prescription_items(*), doctor:users(first_name,last_name)')
+          .eq('patient_id', appointment.patientId!);
+
+      debugPrint('📋 Loaded ${(response as List).length} prescriptions');
+
+      setState(() {
+        prescriptions = List<Map<String, dynamic>>.from(response).map((p) {
+          return {
+            ...p,
+            'doctor': (p['doctor'] != null)
+                ? '${p['doctor']['first_name']} ${p['doctor']['last_name']}'
+                : 'Inconnu',
+            'items': p['prescription_items'] ?? [],
+          };
+        }).toList();
+        isLoadingPrescriptions = false;
+      });
+    } catch (e) {
+      debugPrint('❌ Error loading prescriptions: $e');
+      setState(() => isLoadingPrescriptions = false);
+    }
   }
 
   String _getAppointmentDuration() {
@@ -288,7 +332,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
-                  vertical: 6,
+                  vertical: 0,
                 ),
                 decoration: BoxDecoration(
                   color: _getStatusColor(currentStatus).withOpacity(0.1),
@@ -469,7 +513,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                       'Pendant le rendez-vous',
                       selectedTab == 'Pendant le rendez-vous',
                     ),
-                    // Payment tab removed
+                    _buildTabButton('Ordonnances', selectedTab == 'Ordonnances'),
                   ],
                 ),
               ),
@@ -622,319 +666,22 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
 
   Widget _buildTabContent() {
     if (selectedTab == 'Pendant le rendez-vous') {
-      return _buildDuringAppointmentTab();
+      return DuringAppointmentTab(
+        isAppointmentStarted: isAppointmentStarted,
+        isAppointmentCompleted: isAppointmentCompleted,
+      );
+    } else if (selectedTab == 'Ordonnances') {
+      return PrescriptionsTab(
+        isLoadingPrescriptions: isLoadingPrescriptions,
+        prescriptions: prescriptions,
+        appointment: appointment,
+        onAddPrescription: _showAddPrescriptionDialog,
+      );
     }
-    return _buildOverviewTab(); // Default to Aperçu
-  }
-
-  Widget _buildOverviewTab() {
-    final String currentStatus = isAppointmentCompleted
-        ? 'completed'
-        : appointment.status;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Remarques du rendez-vous',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF111827),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
-          ),
-          child: Text(
-            appointment.notes.isEmpty
-                ? 'Aucune note ajoutée'
-                : appointment.notes,
-            style: TextStyle(
-              fontSize: 13,
-              color: appointment.notes.isEmpty
-                  ? Colors.grey[500]
-                  : Colors.grey[700],
-              height: 1.6,
-            ),
-          ),
-        ),
-        const SizedBox(height: 24),
-        const Text(
-          'Informations rapides',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF111827),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
-          ),
-          child: Column(
-            children: [
-              _buildInfoRow(
-                'ID du rendez-vous',
-                '#APT${appointment.id.padLeft(4, '0')}',
-              ),
-              const Divider(height: 20),
-              _buildInfoRow(
-                'Statut',
-                currentStatus == 'pending'
-                    ? 'EN ATTENTE'
-                    : currentStatus == 'confirmed'
-                    ? 'CONFIRMÉ'
-                    : currentStatus == 'completed'
-                    ? 'TERMINÉ'
-                    : 'ANNULÉ',
-              ),
-              const Divider(height: 20),
-              _buildInfoRow('Type de traitement', appointment.procedure),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDuringAppointmentTab() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isAppointmentCompleted
-                ? const Color(0xFF10B981).withOpacity(0.1)
-                : isAppointmentStarted
-                ? const Color(0xFF10B981).withOpacity(0.1)
-                : Colors.grey[100],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isAppointmentCompleted
-                  ? const Color(0xFF10B981)
-                  : isAppointmentStarted
-                  ? const Color(0xFF10B981)
-                  : const Color(0xFFE5E7EB),
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                isAppointmentCompleted
-                    ? Icons.check_circle
-                    : isAppointmentStarted
-                    ? Icons.check_circle
-                    : Icons.info,
-                color: isAppointmentCompleted
-                    ? const Color(0xFF10B981)
-                    : isAppointmentStarted
-                    ? const Color(0xFF10B981)
-                    : Colors.grey[600],
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  isAppointmentCompleted
-                      ? 'Rendez-vous terminé'
-                      : isAppointmentStarted
-                      ? 'Le rendez-vous est en cours'
-                      : 'Démarrez le rendez-vous pour ajouter des enregistrements',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: isAppointmentCompleted
-                        ? const Color(0xFF10B981)
-                        : isAppointmentStarted
-                        ? const Color(0xFF10B981)
-                        : Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-        const Text(
-          'Enregistrement audio',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF111827),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
-          ),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: (isAppointmentStarted && !isAppointmentCompleted)
-                      ? const Color(0xFF3B82F6).withOpacity(0.1)
-                      : Colors.grey[200],
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                child: Icon(
-                  Icons.mic,
-                  color: (isAppointmentStarted && !isAppointmentCompleted)
-                      ? const Color(0xFF3B82F6)
-                      : Colors.grey[400],
-                  size: 32,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Enregistrer les remarques du patient',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Enregistrez des notes vocales sur le rendez-vous',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: (isAppointmentStarted && !isAppointmentCompleted)
-                    ? () => ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Fonction d\'enregistrement à venir'),
-                        ),
-                      )
-                    : null,
-                icon: const Icon(Icons.fiber_manual_record),
-                label: const Text('Démarrer l\'enregistrement'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3B82F6),
-                  disabledBackgroundColor: Colors.grey[300],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-        const Text(
-          'Notes cliniques',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF111827),
-          ),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          enabled: isAppointmentStarted && !isAppointmentCompleted,
-          maxLines: 5,
-          decoration: InputDecoration(
-            hintText: 'Ajouter des notes cliniques pendant le rendez-vous...',
-            hintStyle: TextStyle(color: Colors.grey[400]),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-            ),
-            disabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[200]!),
-            ),
-            filled: true,
-            fillColor: (isAppointmentStarted && !isAppointmentCompleted)
-                ? Colors.white
-                : Colors.grey[50],
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-          ),
-          style: const TextStyle(fontSize: 13),
-        ),
-        const SizedBox(height: 24),
-        const Text(
-          'Charger des fichiers',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF111827),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: (isAppointmentStarted && !isAppointmentCompleted)
-                ? Colors.grey[50]
-                : Colors.grey[100],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                Icons.cloud_upload_outlined,
-                size: 40,
-                color: (isAppointmentStarted && !isAppointmentCompleted)
-                    ? const Color(0xFF3B82F6)
-                    : Colors.grey[400],
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Glissez et déposez les fichiers ici',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'ou',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: (isAppointmentStarted && !isAppointmentCompleted)
-                    ? () => ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Fonction de téléchargement de fichiers à venir',
-                          ),
-                        ),
-                      )
-                    : null,
-                icon: const Icon(Icons.add),
-                label: const Text('Choisir des fichiers'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3B82F6),
-                  disabledBackgroundColor: Colors.grey[300],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+    return AppointmentOverviewTab(
+      appointment: appointment,
+      isAppointmentCompleted: isAppointmentCompleted,
+    ); // Default to Aperçu
   }
 
   Widget _buildInfoRow(String label, String value) {
@@ -1191,14 +938,31 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'confirmed':
-      case 'completed':
         return const Color(0xFF10B981);
       case 'pending':
+        return Colors.orange;
+      case 'completed':
         return const Color(0xFF3B82F6);
       case 'cancelled':
-        return const Color(0xFFEF4444);
+        return Colors.red;
       default:
-        return const Color(0xFF6B7280);
+        return Colors.grey;
     }
+  }
+
+  void _showAddPrescriptionDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AddPrescriptionDialog(
+          patientId: appointment.patientId!,
+          patientName: appointment.patientName,
+          appointmentId: appointment.id,
+          onPrescriptionAdded: () {
+            _loadPrescriptions();
+          },
+        );
+      },
+    );
   }
 }
