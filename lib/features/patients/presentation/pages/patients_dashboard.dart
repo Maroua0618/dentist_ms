@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dentist_ms/core/constants/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -6,6 +7,7 @@ import 'package:dentist_ms/features/patients/bloc/patient_bloc.dart';
 import 'package:dentist_ms/features/patients/bloc/patient_event.dart';
 import 'package:dentist_ms/features/patients/bloc/patient_state.dart';
 import 'package:dentist_ms/features/patients/models/patient.dart';
+import 'package:dentist_ms/features/patients/presentation/utils/patient_search.dart';
 
 class PatientsDashboard extends StatefulWidget {
   const PatientsDashboard({super.key, required this.onPatientSelected});
@@ -33,6 +35,11 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
   final TextEditingController _insuranceProviderController =
       TextEditingController();
   final TextEditingController _allergiesController = TextEditingController();
+
+  // Search
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  Timer? _searchDebounce; 
 
   @override
   void initState() {
@@ -239,6 +246,7 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                       // Search Field
                       Expanded(
                         child: TextField(
+                          controller: _searchController,
                           textAlignVertical: TextAlignVertical.center,
                           style: const TextStyle(
                             fontSize: 14,
@@ -261,6 +269,17 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                               color: Colors.grey[500],
                               size: 22,
                             ),
+                            suffixIcon: _searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear),
+                                    onPressed: () {
+                                      setState(() {
+                                        _searchController.clear();
+                                        _searchQuery = '';
+                                      });
+                                    },
+                                  )
+                                : null,
                             // Using padding to define the natural height rather than fixed pixels
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16,
@@ -269,7 +288,15 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                             isDense: true,
                           ),
                           onChanged: (value) {
-                            // TODO: Add filtering logic (could be implemented via bloc)
+                            // Debounce to avoid excessive rebuilds
+                            if (_searchDebounce?.isActive ?? false) {
+                              _searchDebounce!.cancel();
+                            }
+                            _searchDebounce = Timer(const Duration(milliseconds: 250), () {
+                              setState(() {
+                                _searchQuery = value.trim();
+                              });
+                            });
                           },
                         ),
                       ),
@@ -348,6 +375,21 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
 
                         if (state is PatientsLoadSuccess) {
                           final patients = state.patients;
+                          final filteredPatients = filterPatients(_searchQuery, patients);
+
+                          if (filteredPatients.isEmpty) {
+                            return SizedBox(
+                              height: 150,
+                              child: Center(
+                                child: Text(
+                                  _searchQuery.isEmpty
+                                      ? 'No patients available'
+                                      : 'No patients match "${_searchQuery}"',
+                                  style: TextStyle(color: Colors.grey[600]),
+                                ),
+                              ),
+                            );
+                          }
 
                           return LayoutBuilder(
                             builder: (context, constraints) {
@@ -360,7 +402,7 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                                     columnSpacing: 24,
                                     horizontalMargin: 16,
                                     dataRowMaxHeight: 80,
-                                    columns: const [
+                                    columns: const [ 
                                       DataColumn(
                                         label: Text(
                                           'Patient',
@@ -410,7 +452,7 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                                         ),
                                       ),
                                     ],
-                                    rows: patients.map((patient) {
+                                    rows: filteredPatients.map((patient) {
                                       return _buildPatientRowFromPatient(
                                         patient: patient,
                                         onRowTap: widget.onPatientSelected,
@@ -730,6 +772,20 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
     return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 */
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _addressController.dispose();
+    _emailController.dispose();
+    _contactController.dispose();
+    _dateOfBirthController.dispose();
+    _insuranceProviderController.dispose();
+    _allergiesController.dispose();
+    _searchController.dispose();
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
   void _showAddPatientDialog() {
     _nameController.clear();
     _addressController.clear();

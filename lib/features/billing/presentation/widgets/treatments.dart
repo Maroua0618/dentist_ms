@@ -58,17 +58,21 @@ class BillingTreatmentCatalogControls extends StatelessWidget {
 class BillingTreatmentCatalogTable extends StatelessWidget {
   final List<Treatment> treatments;
   final BillingResponsiveHelper responsive;
+  final bool canEdit;
 
   const BillingTreatmentCatalogTable({
     Key? key,
     required this.treatments,
     required this.responsive,
+    this.canEdit = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return BillingTableWrapper(
-      headers: ['Nom du Treatment', 'Prix', 'Actions'],
+      headers: canEdit
+          ? ['Nom du Treatment', 'Prix', 'Actions']
+          : ['Nom du Treatment', 'Prix'],
       rows: _buildRows(context),
     );
   }
@@ -79,29 +83,29 @@ class BillingTreatmentCatalogTable extends StatelessWidget {
       final treatment = entry.value;
       final isLast = index == treatments.length - 1;
 
-      return BillingTableRow(
-        isLast: isLast,
-        cells: [
-          InkWell(
-            onTap: () => _showTreatmentDetails(context, treatment),
-            child: Text(
-              treatment.name ?? 'N/A',
-              style: AppTextStyles.body1.copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-          Text(
-            '${treatment.basePrice?.toStringAsFixed(0) ?? '0'} DA',
+      final cells = <Widget>[
+        InkWell(
+          onTap: () => _showTreatmentDetails(context, treatment),
+          child: Text(
+            treatment.name ?? 'N/A',
             style: AppTextStyles.body1.copyWith(
               fontWeight: FontWeight.w600,
-              color: Colors.green,
+              color: AppColors.textPrimary,
             ),
           ),
-          _buildActionButtons(context, treatment),
-        ],
-      );
+        ),
+        Text(
+          '${treatment.basePrice?.toStringAsFixed(0) ?? '0'} DA',
+          style: AppTextStyles.body1.copyWith(
+            fontWeight: FontWeight.w600,
+            color: Colors.green,
+          ),
+        ),
+      ];
+      if (canEdit) {
+        cells.add(_buildActionButtons(context, treatment));
+      }
+      return BillingTableRow(isLast: isLast, cells: cells);
     }).toList();
   }
 

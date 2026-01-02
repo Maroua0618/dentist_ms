@@ -11,7 +11,6 @@ import 'package:dentist_ms/features/billing/bloc/invoice_item_bloc.dart';
 import 'package:dentist_ms/features/billing/bloc/invoice_item_event.dart';
 import 'package:dentist_ms/features/billing/bloc/invoice_item_state.dart';
 import 'package:dentist_ms/features/billing/repositories/invoice_item_repository.dart';
-import 'package:dentist_ms/features/billing/repositories/invoice_repository.dart';
 import 'package:dentist_ms/features/billing/repositories/payment_repository.dart';
 import 'package:intl/intl.dart';
 import '../dialogs/add_invoice_item.dart';
@@ -29,13 +28,7 @@ class InvoiceDetailScreenWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<InvoiceBloc>(
-          create: (context) => InvoiceBloc(
-            repository: SupabaseInvoiceRepository(
-              remote: InvoiceRemoteDataSource(),
-            ),
-          ),
-        ),
+        // Use existing InvoiceBloc from the app level
         BlocProvider<InvoiceItemBloc>(
           create: (context) => InvoiceItemBloc(
             repository: SupabaseInvoiceItemRepository(

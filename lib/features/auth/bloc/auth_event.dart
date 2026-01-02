@@ -1,3 +1,4 @@
+import 'package:dentist_ms/core/models/app_user.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class AuthEvent extends Equatable {
@@ -35,4 +36,13 @@ class AuthUserChanged extends AuthEvent {
 
   @override
   List<Object?> get props => [user];
+}
+
+class AuthUpdateProfile extends AuthEvent {
+  final AppUser updatedUser;
+  
+  AuthUpdateProfile(this.updatedUser);
+  
+  @override
+  List<Object?> get props => [updatedUser];
 }

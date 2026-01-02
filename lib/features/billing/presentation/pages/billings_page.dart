@@ -1,6 +1,8 @@
 import 'package:dentist_ms/features/billing/bloc/payment_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:dentist_ms/features/auth/bloc/auth_bloc.dart';
+import 'package:dentist_ms/features/auth/bloc/auth_state.dart';
 import 'package:dentist_ms/core/constants/app_colors.dart';
 import 'package:dentist_ms/features/billing/presentation/widgets/header.dart';
 import 'package:dentist_ms/features/billing/presentation/widgets/statistics.dart';
@@ -25,79 +27,36 @@ import 'package:dentist_ms/features/billing/bloc/treatment_bloc.dart';
 import 'package:dentist_ms/features/billing/bloc/treatment_event.dart';
 import 'package:dentist_ms/features/billing/bloc/treatment_state.dart';
 import 'package:dentist_ms/features/billing/repositories/payment_repository.dart';
-import 'package:dentist_ms/features/billing/repositories/invoice_repository.dart';
 import 'package:dentist_ms/features/billing/repositories/invoice_item_repository.dart';
 import 'package:dentist_ms/features/billing/repositories/expense_repository.dart';
 import 'package:dentist_ms/features/billing/repositories/treatment_repository.dart';
-import 'package:dentist_ms/features/billing/data/invoice_remote.dart';
 import 'package:dentist_ms/features/billing/data/invoice_item_remote.dart';
 import 'package:dentist_ms/features/billing/data/expense_remote.dart';
 import 'package:dentist_ms/features/billing/data/treatment_remote.dart';
 import 'package:dentist_ms/features/billing/data/payment_remote.dart';
 import 'package:dentist_ms/features/billing/models/expense.dart';
 import 'package:dentist_ms/features/billing/models/treatment.dart';
+import 'package:dentist_ms/core/models/app_user.dart';
+
+// Helper class for tab label and builder
+class _BillingTab {
+  final String label;
+  final Widget Function(BillingResponsiveHelper) builder;
+  _BillingTab(this.label, this.builder);
+}
 
 class BillingsPage extends StatefulWidget {
-  const BillingsPage({Key? key}) : super(key: key);
+  final UserRole? role;
+  const BillingsPage({Key? key, this.role}) : super(key: key);
 
   @override
   State<BillingsPage> createState() => _BillingsPageState();
 }
 
-class BillingsPageWrapper extends StatelessWidget {
-  const BillingsPageWrapper({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(
-          create: (context) => InvoiceBloc(
-            repository: SupabaseInvoiceRepository(
-              remote: InvoiceRemoteDataSource(),
-            ),
-          )..add(LoadInvoices()),
-        ),
-        BlocProvider(
-          create: (context) => InvoiceItemBloc(
-            repository: SupabaseInvoiceItemRepository(
-              remote: InvoiceItemRemoteDataSource(),
-            ),
-            paymentRepository: SupabasePaymentRepository(
-              remote: PaymentRemoteDataSource(),
-            ),
-          )..add(LoadInvoiceItems()),
-        ),
-        BlocProvider(
-          create: (context) => ExpenseBloc(
-            repository: SupabaseExpenseRepository(
-              remote: ExpenseRemoteDataSource(),
-            ),
-          )..add(LoadExpenses()),
-        ),
-        BlocProvider(
-          create: (context) => TreatmentBloc(
-            repository: SupabaseTreatmentRepository(
-              remote: TreatmentRemoteDataSource(),
-            ),
-          )..add(LoadTreatments()),
-        ),
-        BlocProvider(
-          create: (context) => PaymentBloc(
-            repository: SupabasePaymentRepository(
-              remote: PaymentRemoteDataSource(),
-            ),
-          )..add(LoadPayments()),
-        ),
-      ],
-      child: const BillingsPage(),
-    );
-  }
-}
-
 class _BillingsPageState extends State<BillingsPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late List<_BillingTab> _tabs;
   String _selectedStatus = 'Tous les statuts';
   String _invoiceSearchQuery = '';
   String _treatmentSearchQuery = '';
@@ -112,11 +71,42 @@ class _BillingsPageState extends State<BillingsPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-    // Load invoices on init
+    _tabs = _getTabsForRole(widget.role);
+    _tabController = TabController(length: _tabs.length, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<InvoiceBloc>().add(LoadInvoices());
     });
+  }
+
+  List<_BillingTab> _getTabsForRole(UserRole? role) {
+    // Admin: all, Doctor: 0,1,3, Receptionist: 0,3
+    if (role == UserRole.admin) {
+      return [
+        _BillingTab('Factures', _buildInvoicesTab),
+        _BillingTab('Catalogue de Traitements', _buildTreatmentCatalogTab),
+        _BillingTab('Dépenses', _buildExpensesTab),
+        _BillingTab('Historique des paiements', _buildPaymentHistoryTab),
+      ];
+    } else if (role == UserRole.doctor) {
+      return [
+        _BillingTab('Factures', _buildInvoicesTab),
+        _BillingTab('Catalogue de Traitements', _buildTreatmentCatalogTab),
+        _BillingTab('Historique des paiements', _buildPaymentHistoryTab),
+      ];
+    } else if (role == UserRole.receptionist) {
+      return [
+        _BillingTab('Factures', _buildInvoicesTab),
+        _BillingTab('Historique des paiements', _buildPaymentHistoryTab),
+      ];
+    } else {
+      // fallback: all
+      return [
+        _BillingTab('Factures', _buildInvoicesTab),
+        _BillingTab('Catalogue de Traitements', _buildTreatmentCatalogTab),
+        _BillingTab('Dépenses', _buildExpensesTab),
+        _BillingTab('Historique des paiements', _buildPaymentHistoryTab),
+      ];
+    }
   }
 
   @override
@@ -337,12 +327,7 @@ class _BillingsPageState extends State<BillingsPage>
             height: 600,
             child: TabBarView(
               controller: _tabController,
-              children: [
-                _buildInvoicesTab(responsive),
-                _buildTreatmentCatalogTab(responsive),
-                _buildExpensesTab(responsive),
-                _buildPaymentHistoryTab(responsive),
-              ],
+              children: _tabs.map((tab) => tab.builder(responsive)).toList(),
             ),
           ),
         ],
@@ -366,12 +351,7 @@ class _BillingsPageState extends State<BillingsPage>
           fontSize: 15,
           fontWeight: FontWeight.w500,
         ),
-        tabs: const [
-          Tab(text: 'Factures'),
-          Tab(text: 'Catalogue de Traitements'),
-          Tab(text: 'Dépenses'),
-          Tab(text: 'Historique des paiements'),
-        ],
+        tabs: _tabs.map((tab) => Tab(text: tab.label)).toList(),
       ),
     );
   }
@@ -418,6 +398,7 @@ class _BillingsPageState extends State<BillingsPage>
   }
 
   Widget _buildTreatmentCatalogTab(BillingResponsiveHelper responsive) {
+    final isAdmin = widget.role == UserRole.admin;
     return BlocBuilder<TreatmentBloc, TreatmentState>(
       builder: (context, state) {
         List<Treatment> treatments = [];
@@ -440,22 +421,24 @@ class _BillingsPageState extends State<BillingsPage>
         return SingleChildScrollView(
           child: Column(
             children: [
-              BillingTreatmentCatalogControls(
-                responsive: responsive,
-                onAddTreatment: () {
-                  // Refresh is handled by BLoC
-                },
-                onSearchChanged: (query) {
-                  setState(() {
-                    _treatmentSearchQuery = query;
-                  });
-                },
-              ),
+              if (isAdmin)
+                BillingTreatmentCatalogControls(
+                  responsive: responsive,
+                  onAddTreatment: () {
+                    // Refresh is handled by BLoC
+                  },
+                  onSearchChanged: (query) {
+                    setState(() {
+                      _treatmentSearchQuery = query;
+                    });
+                  },
+                ),
               Container(
                 height: 500,
                 child: BillingTreatmentCatalogTable(
                   treatments: filteredTreatments,
                   responsive: responsive,
+                  canEdit: isAdmin,
                 ),
               ),
             ],
@@ -466,6 +449,7 @@ class _BillingsPageState extends State<BillingsPage>
   }
 
   Widget _buildExpensesTab(BillingResponsiveHelper responsive) {
+    final isAdmin = widget.role == UserRole.admin;
     return BlocBuilder<ExpenseBloc, ExpenseState>(
       builder: (context, state) {
         List<Expense> expenses = [];
@@ -509,24 +493,26 @@ class _BillingsPageState extends State<BillingsPage>
         return SingleChildScrollView(
           child: Column(
             children: [
-              BillingExpensesControls(
-                responsive: responsive,
-                onAddExpense: () {
-                  // Refresh is handled by BLoC
-                },
-                selectedCategory: _selectedCategory,
-                onCategoryChanged: (category) {
-                  setState(() {
-                    _selectedCategory = category;
-                  });
-                },
-                categories: categories,
-              ),
+              if (isAdmin)
+                BillingExpensesControls(
+                  responsive: responsive,
+                  onAddExpense: () {
+                    // Refresh is handled by BLoC
+                  },
+                  selectedCategory: _selectedCategory,
+                  onCategoryChanged: (category) {
+                    setState(() {
+                      _selectedCategory = category;
+                    });
+                  },
+                  categories: categories,
+                ),
               Container(
                 height: 500,
                 child: BillingExpensesTable(
                   expenses: expensesData,
                   responsive: responsive,
+                  canEdit: isAdmin,
                 ),
               ),
             ],
@@ -612,6 +598,56 @@ class _BillingsPageState extends State<BillingsPage>
           ),
         );
       },
+    );
+  }
+}
+
+class BillingsPageWrapper extends StatelessWidget {
+  const BillingsPageWrapper({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiBlocProvider(
+      providers: [
+        // Use existing InvoiceBloc from the app level instead of creating a new one
+        BlocProvider(
+          create: (context) => InvoiceItemBloc(
+            repository: SupabaseInvoiceItemRepository(
+              remote: InvoiceItemRemoteDataSource(),
+            ),
+            paymentRepository: SupabasePaymentRepository(
+              remote: PaymentRemoteDataSource(),
+            ),
+          )..add(LoadInvoiceItems()),
+        ),
+        BlocProvider(
+          create: (context) => ExpenseBloc(
+            repository: SupabaseExpenseRepository(
+              remote: ExpenseRemoteDataSource(),
+            ),
+          )..add(LoadExpenses()),
+        ),
+        BlocProvider(
+          create: (context) => TreatmentBloc(
+            repository: SupabaseTreatmentRepository(
+              remote: TreatmentRemoteDataSource(),
+            ),
+          )..add(LoadTreatments()),
+        ),
+        BlocProvider(
+          create: (context) => PaymentBloc(
+            repository: SupabasePaymentRepository(
+              remote: PaymentRemoteDataSource(),
+            ),
+          )..add(LoadPayments()),
+        ),
+      ],
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, authState) {
+          final role = authState.user?.role;
+          return BillingsPage(role: role);
+        },
+      ),
     );
   }
 }
