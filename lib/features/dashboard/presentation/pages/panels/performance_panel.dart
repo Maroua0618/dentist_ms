@@ -97,7 +97,7 @@ class _PerformancePanelState extends State<PerformancePanel> {
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  'Classement par traitements terminés',
+                  'Classement par rendez-vous terminés',
                   style: TextStyle(color: kTextSecondary),
                 ),
                 const SizedBox(height: 12),
