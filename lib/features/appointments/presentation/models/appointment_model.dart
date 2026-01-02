@@ -119,6 +119,10 @@ class Appointment {
   List<Remark> remarks;
   List<PaymentRecord> payments;
   double totalCost;
+  String? patientComplaints;
+  String? clinicalFindings;
+  String? teethTreated;
+  String? treatmentPerformed;
 
   Appointment({
     required this.id,
@@ -137,6 +141,10 @@ class Appointment {
     this.remarks = const [],
     this.payments = const [],
     this.totalCost = 0.0,
+    this.patientComplaints,
+    this.clinicalFindings,
+    this.teethTreated,
+    this.treatmentPerformed,
   });
   Appointment copyWith({
     String? id,
@@ -155,6 +163,10 @@ class Appointment {
     List<Remark>? remarks,
     List<PaymentRecord>? payments,
     double? totalCost,
+    String? patientComplaints,
+    String? clinicalFindings,
+    String? teethTreated,
+    String? treatmentPerformed,
   }) {
     return Appointment(
       id: id ?? this.id,
@@ -173,6 +185,10 @@ class Appointment {
       remarks: remarks ?? this.remarks,
       payments: payments ?? this.payments,
       totalCost: totalCost ?? this.totalCost,
+      patientComplaints: patientComplaints ?? this.patientComplaints,
+      clinicalFindings: clinicalFindings ?? this.clinicalFindings,
+      teethTreated: teethTreated ?? this.teethTreated,
+      treatmentPerformed: treatmentPerformed ?? this.treatmentPerformed,
     );
   }
 
@@ -210,6 +226,10 @@ class Appointment {
           .map((e) => PaymentRecord.fromJson(e as Map<String, dynamic>))
           .toList(),
       totalCost: (json['totalCost'] as num?)?.toDouble() ?? 0.0,
+      patientComplaints: json['patient_complaints'] as String?,
+      clinicalFindings: json['clinical_findings'] as String?,
+      teethTreated: json['teeth_treated'] as String?,
+      treatmentPerformed: json['treatment_performed'] as String?,
     );
   }
 
@@ -240,5 +260,9 @@ class Appointment {
         'remarks': remarks.map((e) => e.toJson()).toList(),
         'payments': payments.map((e) => e.toJson()).toList(),
         'totalCost': totalCost,
+        'patient_complaints': patientComplaints,
+        'clinical_findings': clinicalFindings,
+        'teeth_treated': teethTreated,
+        'treatment_performed': treatmentPerformed,
       };
 }

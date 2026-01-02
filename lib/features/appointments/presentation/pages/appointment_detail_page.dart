@@ -106,6 +106,33 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
     );
   }
 
+  Future<void> _saveClinicalData(Appointment updatedAppointment) async {
+    try {
+      setState(() {
+        appointment = updatedAppointment;
+      });
+      
+      context.read<AppointmentBloc>().add(
+        UpdateAppointment(updatedAppointment),
+      );
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✓ Informations cliniques enregistrées'),
+          backgroundColor: Color(0xFF10B981),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de l\'enregistrement: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   void _completeAppointment() {
     showDialog(
       context: context,
@@ -671,6 +698,8 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
       return DuringAppointmentTab(
         isAppointmentStarted: isAppointmentStarted,
         isAppointmentCompleted: isAppointmentCompleted,
+        appointment: appointment,
+        onSave: _saveClinicalData,
       );
     } else if (selectedTab == 'Ordonnances') {
       return PrescriptionsTab(

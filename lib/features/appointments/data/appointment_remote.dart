@@ -61,6 +61,10 @@ class AppointmentRemoteDataSource {
       'status': appointment.status,
       'diagnosis': appointment.procedure,
       'notes': appointment.notes,
+      'patient_complaints': appointment.patientComplaints,
+      'clinical_findings': appointment.clinicalFindings,
+      'teeth_treated': appointment.teethTreated,
+      'treatment_performed': appointment.treatmentPerformed,
     };
   }
 
