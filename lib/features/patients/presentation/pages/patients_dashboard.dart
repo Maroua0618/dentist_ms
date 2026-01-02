@@ -1,5 +1,9 @@
 import 'dart:async';
 import 'package:dentist_ms/core/constants/app_colors.dart';
+import 'package:dentist_ms/features/patients/models/patient_filter.dart';
+import 'package:dentist_ms/features/patients/presentation/utils/patient_export.dart';
+import 'package:dentist_ms/features/patients/presentation/utils/patient_filter_util.dart';
+import 'package:dentist_ms/features/patients/presentation/widgets/patient_export.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -39,7 +43,9 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
   // Search
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  Timer? _searchDebounce; 
+  Timer? _searchDebounce;
+
+PatientFilter _currentFilter = const PatientFilter();
 
   @override
   void initState() {
@@ -292,11 +298,14 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                             if (_searchDebounce?.isActive ?? false) {
                               _searchDebounce!.cancel();
                             }
-                            _searchDebounce = Timer(const Duration(milliseconds: 250), () {
-                              setState(() {
-                                _searchQuery = value.trim();
-                              });
-                            });
+                            _searchDebounce = Timer(
+                              const Duration(milliseconds: 250),
+                              () {
+                                setState(() {
+                                  _searchQuery = value.trim();
+                                });
+                              },
+                            );
                           },
                         ),
                       ),
@@ -375,7 +384,10 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
 
                         if (state is PatientsLoadSuccess) {
                           final patients = state.patients;
-                          final filteredPatients = filterPatients(_searchQuery, patients);
+                          final filteredPatients = PatientFilterUtil.applyFilters(
+                            filterPatients(_searchQuery, patients),
+                            _currentFilter,
+                          );
 
                           if (filteredPatients.isEmpty) {
                             return SizedBox(
@@ -402,7 +414,7 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                                     columnSpacing: 24,
                                     horizontalMargin: 16,
                                     dataRowMaxHeight: 80,
-                                    columns: const [ 
+                                    columns: const [
                                       DataColumn(
                                         label: Text(
                                           'Patient',
@@ -667,9 +679,9 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
             child: Text(
               status.toUpperCase(),
               style: TextStyle(
-                color: status.toLowerCase() == 'active' 
-                ? AppColors.white
-                : AppColors.textDark,
+                color: status.toLowerCase() == 'active'
+                    ? AppColors.white
+                    : AppColors.textDark,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
