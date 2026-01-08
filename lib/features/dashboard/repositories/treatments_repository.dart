@@ -1,8 +1,9 @@
 import 'package:dentist_ms/features/dashboard/data/treatments_remote.dart';
 import 'package:dentist_ms/features/dashboard/models/treatments_chart_data.dart';
 abstract class TreatmentsRepository {
-  Future<TreatmentsChartData> getTreatmentsChartData();
+  Future<TreatmentsChartData> getTreatmentsChartData(int year);
 }
+
 class SupabaseTreatmentsRepository implements TreatmentsRepository {
   final TreatmentsRemoteDataSource _remote;
 
@@ -10,7 +11,7 @@ class SupabaseTreatmentsRepository implements TreatmentsRepository {
       : _remote = remote;
 
   @override
-  Future<TreatmentsChartData> getTreatmentsChartData() async {
-    return await _remote.getTreatmentsChartData();
+  Future<TreatmentsChartData> getTreatmentsChartData(int year) async {
+    return await _remote.getTreatmentsChartData(year);
   }
 }
