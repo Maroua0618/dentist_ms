@@ -6,7 +6,7 @@ class TreatmentsRemoteDataSource {
 
   TreatmentsRemoteDataSource({SupabaseClient? client})
       : _client = client ??  Supabase.instance.client;
-  Future<TreatmentsChartData> getTreatmentsChartData() async {
+  Future<TreatmentsChartData> getTreatmentsChartData(int year) async {
     try {
       print('\n=== FETCHING TREATMENTS DATA ===');
       final treatmentsResponse = await _client
@@ -24,9 +24,13 @@ class TreatmentsRemoteDataSource {
           totalCount:  0,
         );
       }
-      final patientTreatmentsResponse = await _client
-          .from('patient_treatments')
-          .select('treatment_id');
+          final startDate = DateTime(year, 1, 1).toIso8601String().split('T').first;
+          final endDate = DateTime(year, 12, 31).toIso8601String().split('T').first; 
+            final patientTreatmentsResponse = await _client
+              .from('patient_treatments')
+              .select('id, treatment_id, session_date')
+              .gte('session_date', startDate)
+              .lte('session_date', endDate);
 
       final patientTreatments = patientTreatmentsResponse as List;
       final totalCount = patientTreatments.length;
