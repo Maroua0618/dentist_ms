@@ -123,7 +123,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     
     try {
       // You need to add updateUser method to your AuthRepository
-      final updatedUser = await _authRepository.updateUser(event.updatedUser);
+      final updatedUser = await _authRepository.updateUser(event.user);
       
       emit(state.copyWith(
         status: AuthStatus.authenticated,

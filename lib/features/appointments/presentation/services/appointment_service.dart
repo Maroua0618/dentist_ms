@@ -1,5 +1,4 @@
 import '../models/appointment_model.dart';
-import '../utils/appointment_utils.dart';
 
 // appointment_service.dart - EMPTY / DISABLED
 class AppointmentService {

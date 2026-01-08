@@ -18,11 +18,11 @@ class BillingTreatmentCatalogControls extends StatelessWidget {
   final Function(String)? onSearchChanged;
 
   const BillingTreatmentCatalogControls({
-    Key? key,
+    super.key,
     required this.responsive,
     required this.onAddTreatment,
     this.onSearchChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -61,11 +61,11 @@ class BillingTreatmentCatalogTable extends StatelessWidget {
   final bool canEdit;
 
   const BillingTreatmentCatalogTable({
-    Key? key,
+    super.key,
     required this.treatments,
     required this.responsive,
     this.canEdit = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,3 +1,4 @@
+import 'package:dentist_ms/core/constants/app_colors.dart';
 import 'package:dentist_ms/core/constants/app_routes.dart';
 import 'package:dentist_ms/core/theme/app_theme.dart';
 import 'package:dentist_ms/features/auth/bloc/auth_bloc.dart';
@@ -8,6 +9,7 @@ import 'package:dentist_ms/features/patients/bloc/patient_event.dart';
 import 'package:dentist_ms/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/svg.dart';
 
 class DentistApp extends StatelessWidget {
   const DentistApp({super.key});
@@ -45,7 +47,7 @@ class AuthWrapper extends StatelessWidget {
         }
 
         // Authenticated - navigate to dashboard
-        if (state. status == AuthStatus.authenticated) {
+        if (state.status == AuthStatus.authenticated) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             Navigator.pushNamedAndRemoveUntil(
               context,
@@ -79,14 +81,13 @@ class _LoadingScreen extends StatelessWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF4F7EFF), Color(0xFF9D6CFF)],
-                ),
-                borderRadius: BorderRadius. circular(20),
+                gradient: AppColors.primaryGradient,
+                borderRadius: BorderRadius.circular(20),
               ),
-              child:  const Icon(
-                Icons.local_hospital,
-                size: 40,
+              child: SvgPicture.asset(
+                "assets/images/dms.svg",
+                height: 40,
+                width: 40,
                 color: Colors.white,
               ),
             ),
@@ -99,11 +100,11 @@ class _LoadingScreen extends StatelessWidget {
                 strokeWidth: 3,
               ),
             ),
-            const SizedBox(height:  24),
+            const SizedBox(height: 24),
             Text(
-              "Khelil's Dental Center",
+              "DentaLINK",
               style: TextStyle(
-                color: Colors.white. withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
               ),
@@ -112,7 +113,7 @@ class _LoadingScreen extends StatelessWidget {
             Text(
               'Chargement...',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white.withValues(alpha: 0.5),
                 fontSize: 14,
               ),
             ),

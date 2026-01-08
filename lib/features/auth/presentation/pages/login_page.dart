@@ -75,7 +75,7 @@ class _LoginPageState extends State<LoginPage>
   void _handleSignIn() {
     _clearErrors();
 
-    final email = _emailController.text. trim();
+    final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
     // Validate fields
@@ -93,7 +93,10 @@ class _LoginPageState extends State<LoginPage>
       setState(() => _passwordError = 'Veuillez entrer votre mot de passe');
       hasError = true;
     } else if (password.length < 6) {
-      setState(() => _passwordError = 'Le mot de passe doit contenir au moins 6 caractères');
+      setState(
+        () => _passwordError =
+            'Le mot de passe doit contenir au moins 6 caractères',
+      );
       hasError = true;
     }
 
@@ -112,7 +115,11 @@ class _LoginPageState extends State<LoginPage>
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+            const Icon(
+              Icons.check_circle_outline,
+              color: Colors.white,
+              size: 20,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(message, style: const TextStyle(fontSize: 14)),
@@ -130,13 +137,15 @@ class _LoginPageState extends State<LoginPage>
 
   void _showResetPasswordDialog() {
     String? resetEmailError;
-    
+
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: const Color(0xFF1E2530),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Text(
             'Réinitialiser le mot de passe',
             style: TextStyle(
@@ -152,7 +161,7 @@ class _LoginPageState extends State<LoginPage>
               Text(
                 'Entrez votre email pour recevoir un lien de réinitialisation',
                 style: TextStyle(
-                  color: Colors.white. withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 13,
                 ),
               ),
@@ -163,12 +172,14 @@ class _LoginPageState extends State<LoginPage>
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: 'votre. email@example.com',
-                  hintStyle: TextStyle(color: Colors.white. withOpacity(0.3)),
+                  hintStyle: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.3),
+                  ),
                   filled: true,
                   fillColor: const Color(0xFF2A3441),
                   prefixIcon: Icon(
                     Icons.email_outlined,
-                    color: Colors.white. withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                   ),
                   errorText: resetEmailError,
                   errorStyle: const TextStyle(
@@ -177,24 +188,24 @@ class _LoginPageState extends State<LoginPage>
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide. none,
+                    borderSide: BorderSide.none,
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius:  BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
-                      color: resetEmailError != null 
-                          ? const Color(0xFFDC2626) 
-                          : Colors.white.withOpacity(0.1),
+                      color: resetEmailError != null
+                          ? const Color(0xFFDC2626)
+                          : Colors.white.withValues(alpha: 0.1),
                       width: 1,
                     ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
-                      color:  resetEmailError != null 
-                          ? const Color(0xFFDC2626) 
+                      color: resetEmailError != null
+                          ? const Color(0xFFDC2626)
                           : const Color(0xFF4F7EFF),
-                      width:  2,
+                      width: 2,
                     ),
                   ),
                 ),
@@ -206,7 +217,7 @@ class _LoginPageState extends State<LoginPage>
               ),
             ],
           ),
-          actions:  [
+          actions: [
             TextButton(
               onPressed: () {
                 _resetEmailController.clear();
@@ -214,15 +225,17 @@ class _LoginPageState extends State<LoginPage>
               },
               child: Text(
                 'Annuler',
-                style: TextStyle(color: Colors.white. withOpacity(0.7)),
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
               ),
             ),
             ElevatedButton(
               onPressed: () {
                 final email = _resetEmailController.text.trim();
-                
+
                 if (email.isEmpty) {
-                  setDialogState(() => resetEmailError = 'Veuillez entrer votre email');
+                  setDialogState(
+                    () => resetEmailError = 'Veuillez entrer votre email',
+                  );
                   return;
                 }
                 if (!_isValidEmail(email)) {
@@ -234,7 +247,8 @@ class _LoginPageState extends State<LoginPage>
                 Navigator.pop(dialogContext);
                 _resetEmailController.clear();
                 _showSuccessSnackBar(
-                    'Email de réinitialisation envoyé !  Vérifiez votre boîte de réception.');
+                  'Email de réinitialisation envoyé !  Vérifiez votre boîte de réception.',
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4F7EFF),
@@ -242,7 +256,10 @@ class _LoginPageState extends State<LoginPage>
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text('Envoyer', style: TextStyle(color: Colors.white)),
+              child: const Text(
+                'Envoyer',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -262,15 +279,15 @@ class _LoginPageState extends State<LoginPage>
         } else if (state.status == AuthStatus.error) {
           // Parse error and set appropriate field error
           final errorMsg = state.errorMessage ?? 'Erreur de connexion';
-          
+
           setState(() {
-            if (errorMsg.toLowerCase().contains('email') || 
+            if (errorMsg.toLowerCase().contains('email') ||
                 errorMsg.toLowerCase().contains('user') ||
                 errorMsg.toLowerCase().contains('not found')) {
               _emailError = 'Email non trouvé';
               _generalError = null;
-            } else if (errorMsg.toLowerCase().contains('password') || 
-                       errorMsg.toLowerCase().contains('invalid')) {
+            } else if (errorMsg.toLowerCase().contains('password') ||
+                errorMsg.toLowerCase().contains('invalid')) {
               _passwordError = 'Mot de passe incorrect';
               _generalError = null;
             } else {
@@ -297,7 +314,7 @@ class _LoginPageState extends State<LoginPage>
                   stops: [0.0, 0.5, 1.0],
                 ),
               ),
-              child:  isDesktop
+              child: isDesktop
                   ? Row(
                       children: [
                         Expanded(flex: 5, child: _buildLeftSection()),
@@ -316,14 +333,10 @@ class _LoginPageState extends State<LoginPage>
             // Recognized Dialog
             if (_showRecognizedDialog)
               FaceRecognitionOverlay(
-                onClose:  () {
+                onClose: () {
                   setState(() => _showRecognizedDialog = false);
                 },
-                onContinue: () {
-                  setState(() => _showRecognizedDialog = false);
-                  Navigator.pushReplacementNamed(
-                      context, AppRoutes.dashboardShell);
-                },
+                onContinue: () {},
                 onTryAgain: () {
                   setState(() {
                     _showRecognizedDialog = false;
@@ -335,12 +348,12 @@ class _LoginPageState extends State<LoginPage>
             // Loading Overlay
             BlocBuilder<AuthBloc, AuthState>(
               builder: (context, state) {
-                if (state.status == AuthStatus. loading) {
+                if (state.status == AuthStatus.loading) {
                   return Container(
                     color: Colors.black54,
                     child: const Center(
                       child: Column(
-                        mainAxisAlignment:  MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           CircularProgressIndicator(
                             valueColor: AlwaysStoppedAnimation<Color>(
@@ -350,17 +363,14 @@ class _LoginPageState extends State<LoginPage>
                           SizedBox(height: 16),
                           Text(
                             'Connexion en cours...',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                            ),
+                            style: TextStyle(color: Colors.white, fontSize: 14),
                           ),
                         ],
                       ),
                     ),
                   );
                 }
-                return const SizedBox. shrink();
+                return const SizedBox.shrink();
               },
             ),
           ],
@@ -377,27 +387,24 @@ class _LoginPageState extends State<LoginPage>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children:  [
+            children: [
               const SizedBox(height: 20),
               // Logo
               Row(
                 children: [
                   Container(
-                    decoration: AppColors.selectedPage. copyWith(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
                     padding: const EdgeInsets.all(8),
-                    child: SvgPicture.asset(
-                      "assets/icons/pfp.svg",
-                      width: 35,
-                      height: 35,
+                    child: Image.asset(
+                      "assets/images/logo.png",
+                      width: 65,
+                      height: 65,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   const Text(
-                    "Khelil's dental center",
+                    "Dental Clinic Managment System",
                     style: TextStyle(
-                      color: Colors. white,
+                      color: Colors.white,
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                     ),
@@ -422,7 +429,7 @@ class _LoginPageState extends State<LoginPage>
               const Text(
                 'Streamline your practice with AI-powered patient management,\nseamless scheduling, and advanced analytics.',
                 style: TextStyle(
-                  color: Colors. white70,
+                  color: Colors.white70,
                   fontSize: 13,
                   height: 1.4,
                 ),
@@ -468,7 +475,7 @@ class _LoginPageState extends State<LoginPage>
                   Text(
                     'Protected by enterprise-grade encryption',
                     style: TextStyle(
-                      color: Colors. white. withOpacity(0.5),
+                      color: Colors.white.withValues(alpha: 0.5),
                       fontSize: 11,
                     ),
                   ),
@@ -489,16 +496,19 @@ class _LoginPageState extends State<LoginPage>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white. withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SvgPicture.asset(
             icon,
-            width:  28,
+            width: 28,
             height: 28,
             colorFilter: const ColorFilter.mode(
               Color(0xFF00B8DB),
@@ -518,7 +528,7 @@ class _LoginPageState extends State<LoginPage>
           Text(
             subtitle,
             style: TextStyle(
-              color: Colors. white. withOpacity(0.6),
+              color: Colors.white.withValues(alpha: 0.6),
               fontSize: 13,
             ),
           ),
@@ -536,10 +546,10 @@ class _LoginPageState extends State<LoginPage>
           padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
             color: const Color(0xFF1E2530),
-            borderRadius:  BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color:  Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 40,
                 spreadRadius: 0,
                 offset: const Offset(0, 20),
@@ -555,7 +565,7 @@ class _LoginPageState extends State<LoginPage>
                 height: 400,
                 child: TabBarView(
                   controller: _tabController,
-                  children:  [_buildFacialRecognitionTab(), _buildPasswordTab()],
+                  children: [_buildFacialRecognitionTab(), _buildPasswordTab()],
                 ),
               ),
             ],
@@ -570,7 +580,7 @@ class _LoginPageState extends State<LoginPage>
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: const Color(0xFF2A3441),
-        borderRadius:  BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: SizedBox(
         height: 40,
@@ -580,10 +590,10 @@ class _LoginPageState extends State<LoginPage>
           indicatorSize: TabBarIndicatorSize.tab,
           indicator: BoxDecoration(
             gradient: AppColors.primaryGradient,
-            borderRadius:  BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(10),
           ),
           labelColor: Colors.white,
-          unselectedLabelColor: Colors. white.withOpacity(0.5),
+          unselectedLabelColor: Colors.white.withValues(alpha: 0.5),
           onTap: (_) => _clearErrors(), // Clear errors when switching tabs
           tabs: [
             Tab(
@@ -614,7 +624,7 @@ class _LoginPageState extends State<LoginPage>
                   SvgPicture.asset(
                     "assets/icons/lock.svg",
                     width: 16,
-                    height:  16,
+                    height: 16,
                     colorFilter: const ColorFilter.mode(
                       Colors.white,
                       BlendMode.srcIn,
@@ -637,7 +647,7 @@ class _LoginPageState extends State<LoginPage>
   Widget _buildFacialRecognitionTab() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children:  [
+      children: [
         Column(
           children: [
             const Text(
@@ -653,7 +663,7 @@ class _LoginPageState extends State<LoginPage>
               'Utilisez la reconnaissance faciale pour un accès\ninstantané et sécurisé',
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.white.withOpacity(0.6),
+                color: Colors.white.withValues(alpha: 0.6),
               ),
               textAlign: TextAlign.center,
             ),
@@ -666,13 +676,16 @@ class _LoginPageState extends State<LoginPage>
             borderRadius: BorderRadius.circular(24),
             gradient: LinearGradient(
               colors: [
-                const Color(0xFF4F7EFF).withOpacity(0.2),
-                const Color(0xFF9D6CFF).withOpacity(0.2),
+                const Color(0xFF4F7EFF).withValues(alpha: 0.2),
+                const Color(0xFF9D6CFF).withValues(alpha: 0.2),
               ],
-              begin:  Alignment.topLeft,
+              begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.1),
+              width: 1,
+            ),
           ),
           child: Center(
             child: Container(
@@ -682,7 +695,7 @@ class _LoginPageState extends State<LoginPage>
                 shape: BoxShape.circle,
                 border: Border.all(color: const Color(0xFF4F7EFF), width: 3),
               ),
-              child:  const Center(
+              child: const Center(
                 child: Icon(
                   Icons.center_focus_strong_rounded,
                   size: 45,
@@ -692,7 +705,6 @@ class _LoginPageState extends State<LoginPage>
             ),
           ),
         ),
-        const SizedBox(height: 28),
         _buildGradientButton(
           text: 'Démarrer la reconnaissance faciale',
           onPressed: _startFacialRecognition,
@@ -705,22 +717,29 @@ class _LoginPageState extends State<LoginPage>
     return Form(
       key: _formKey,
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'Content de te revoir',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+          Column(
+            children: [
+              const Text(
+                'Content de te revoir',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Saisissez vos identifiants pour accéder à votre compte',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.white.withValues(alpha: 0.6),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Saisissez vos identifiants pour accéder à votre compte',
-            style: TextStyle(fontSize: 13, color: Colors. white.withOpacity(0.6)),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height:  24),
 
           // General error message
           if (_generalError != null)
@@ -728,11 +747,11 @@ class _LoginPageState extends State<LoginPage>
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.only(bottom: 16),
-              decoration:  BoxDecoration(
-                color:  const Color(0xFFDC2626).withOpacity(0.1),
+              decoration: BoxDecoration(
+                color: const Color(0xFFDC2626).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: const Color(0xFFDC2626).withOpacity(0.3),
+                  color: const Color(0xFFDC2626).withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
@@ -745,9 +764,9 @@ class _LoginPageState extends State<LoginPage>
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      _generalError! ,
+                      _generalError!,
                       style: const TextStyle(
-                        color:  Color(0xFFDC2626),
+                        color: Color(0xFFDC2626),
                         fontSize: 13,
                       ),
                     ),
@@ -755,17 +774,17 @@ class _LoginPageState extends State<LoginPage>
                 ],
               ),
             ),
-
-          _buildEmailField(),
-          const SizedBox(height: 20),
-          _buildPasswordField(),
-          const SizedBox(height: 16),
-          _buildRememberForgot(),
-          const Spacer(),
-          _buildGradientButton(
-            text:  'Se connecter',
-            onPressed:  _handleSignIn,
+          Column(
+            children: [
+              _buildEmailField(),
+              const SizedBox(height: 30),
+              _buildPasswordField(),
+              const SizedBox(height: 16),
+              _buildRememberForgot(),
+            ],
           ),
+
+          _buildGradientButton(text: 'Se connecter', onPressed: _handleSignIn),
         ],
       ),
     );
@@ -778,23 +797,23 @@ class _LoginPageState extends State<LoginPage>
         TextField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
-          style: const TextStyle(color:  Colors.white, fontSize: 14),
+          style: const TextStyle(color: Colors.white, fontSize: 14),
           onChanged: (_) {
             if (_emailError != null) {
               setState(() => _emailError = null);
             }
           },
-          decoration:  InputDecoration(
+          decoration: InputDecoration(
             prefixIcon: Icon(
               Icons.email_outlined,
-              color: _emailError != null 
-                  ? const Color(0xFFDC2626) 
-                  : Colors.white.withOpacity(0.5),
+              color: _emailError != null
+                  ? const Color(0xFFDC2626)
+                  : Colors.white.withValues(alpha: 0.5),
               size: 18,
             ),
             hintText: 'dr. smith@dentalai.com',
             hintStyle: TextStyle(
-              color: Colors.white.withOpacity(0.3),
+              color: Colors.white.withValues(alpha: 0.3),
               fontSize: 13,
             ),
             filled: true,
@@ -804,23 +823,23 @@ class _LoginPageState extends State<LoginPage>
               horizontal: 16,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius. circular(12),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius:  BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: _emailError != null 
-                    ? const Color(0xFFDC2626) 
-                    : Colors.white. withOpacity(0.1),
+                color: _emailError != null
+                    ? const Color(0xFFDC2626)
+                    : Colors.white.withValues(alpha: 0.1),
                 width: 1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius:  BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: _emailError != null 
-                    ? const Color(0xFFDC2626) 
+                color: _emailError != null
+                    ? const Color(0xFFDC2626)
                     : const Color(0xFF4F7EFF),
                 width: 2,
               ),
@@ -834,12 +853,12 @@ class _LoginPageState extends State<LoginPage>
               children: [
                 const Icon(
                   Icons.error_outline,
-                  color:  Color(0xFFDC2626),
+                  color: Color(0xFFDC2626),
                   size: 14,
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  _emailError! ,
+                  _emailError!,
                   style: const TextStyle(
                     color: Color(0xFFDC2626),
                     fontSize: 12,
@@ -868,9 +887,9 @@ class _LoginPageState extends State<LoginPage>
           decoration: InputDecoration(
             prefixIcon: Icon(
               Icons.lock_outline,
-              color: _passwordError != null 
-                  ? const Color(0xFFDC2626) 
-                  : Colors.white.withOpacity(0.5),
+              color: _passwordError != null
+                  ? const Color(0xFFDC2626)
+                  : Colors.white.withValues(alpha: 0.5),
               size: 18,
             ),
             suffixIcon: IconButton(
@@ -878,7 +897,7 @@ class _LoginPageState extends State<LoginPage>
                 _obscurePassword
                     ? Icons.visibility_off_outlined
                     : Icons.visibility_outlined,
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white.withValues(alpha: 0.5),
                 size: 18,
               ),
               onPressed: () {
@@ -889,12 +908,12 @@ class _LoginPageState extends State<LoginPage>
             ),
             hintText: 'Mot de passe',
             hintStyle: TextStyle(
-              color: Colors.white.withOpacity(0.3),
+              color: Colors.white.withValues(alpha: 0.3),
               fontSize: 13,
             ),
             filled: true,
             fillColor: const Color(0xFF2A3441),
-            contentPadding: const EdgeInsets. symmetric(
+            contentPadding: const EdgeInsets.symmetric(
               vertical: 14,
               horizontal: 16,
             ),
@@ -905,17 +924,17 @@ class _LoginPageState extends State<LoginPage>
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: _passwordError != null 
-                    ? const Color(0xFFDC2626) 
-                    : Colors.white.withOpacity(0.1),
+                color: _passwordError != null
+                    ? const Color(0xFFDC2626)
+                    : Colors.white.withValues(alpha: 0.1),
                 width: 1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius. circular(12),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: _passwordError != null 
-                    ? const Color(0xFFDC2626) 
+                color: _passwordError != null
+                    ? const Color(0xFFDC2626)
                     : const Color(0xFF4F7EFF),
                 width: 2,
               ),
@@ -950,16 +969,16 @@ class _LoginPageState extends State<LoginPage>
   Widget _buildRememberForgot() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children:  [
+      children: [
         Row(
           children: [
             SizedBox(
               width: 18,
               height: 18,
-              child:  Checkbox(
+              child: Checkbox(
                 value: rememberMe,
                 onChanged: (val) {
-                  setState(() => rememberMe = val ??  false);
+                  setState(() => rememberMe = val ?? false);
                 },
                 fillColor: WidgetStateProperty.resolveWith((states) {
                   if (states.contains(WidgetState.selected)) {
@@ -967,14 +986,14 @@ class _LoginPageState extends State<LoginPage>
                   }
                   return Colors.transparent;
                 }),
-                side: BorderSide(color: Colors.white. withOpacity(0.3)),
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
               ),
             ),
             const SizedBox(width: 8),
             Text(
               'Souviens-toi de moi',
               style: TextStyle(
-                color: Colors. white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 12,
               ),
             ),
@@ -982,9 +1001,9 @@ class _LoginPageState extends State<LoginPage>
         ),
         TextButton(
           onPressed: _showResetPasswordDialog,
-          style: TextButton. styleFrom(
+          style: TextButton.styleFrom(
             padding: EdgeInsets.zero,
-            minimumSize: Size. zero,
+            minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
           child: const Text(
@@ -1007,11 +1026,11 @@ class _LoginPageState extends State<LoginPage>
         style: ElevatedButton.styleFrom(
           padding: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
-            borderRadius:  BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
         onPressed: onPressed,
-        child:  Ink(
+        child: Ink(
           decoration: BoxDecoration(
             gradient: AppColors.primaryGradient,
             borderRadius: BorderRadius.circular(12),

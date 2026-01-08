@@ -79,7 +79,9 @@ class _AppointmentPageState extends State<AppointmentPage> {
       return appointments.where((a) => a.doctorId == currentDoctorId).toList();
     }
     if (selectedFilterDoctorId != null) {
-      return appointments.where((a) => a.doctorId == selectedFilterDoctorId).toList();
+      return appointments
+          .where((a) => a.doctorId == selectedFilterDoctorId)
+          .toList();
     }
     return appointments;
   }
@@ -88,41 +90,59 @@ class _AppointmentPageState extends State<AppointmentPage> {
     final filtered = _applyRoleFilter(all);
     final today = selectedDay;
 
-    return filtered.where((a) =>
-        a.appointmentDate.year == today.year &&
-        a.appointmentDate.month == today.month &&
-        a.appointmentDate.day == today.day &&
-        a.status != 'cancelled').toList();
+    return filtered
+        .where(
+          (a) =>
+              a.appointmentDate.year == today.year &&
+              a.appointmentDate.month == today.month &&
+              a.appointmentDate.day == today.day &&
+              a.status != 'cancelled',
+        )
+        .toList();
   }
 
   List<Appointment> getFilteredAppointments(List<Appointment> all) {
     final filtered = _applyRoleFilter(all);
 
     if (viewMode == 'Jour') {
-      return filtered.where((a) =>
-          a.appointmentDate.year == selectedDay.year &&
-          a.appointmentDate.month == selectedDay.month &&
-          a.appointmentDate.day == selectedDay.day).toList();
+      return filtered
+          .where(
+            (a) =>
+                a.appointmentDate.year == selectedDay.year &&
+                a.appointmentDate.month == selectedDay.month &&
+                a.appointmentDate.day == selectedDay.day,
+          )
+          .toList();
     } else if (viewMode == 'Semaine') {
-      final monday = selectedDay.subtract(Duration(days: selectedDay.weekday - 1));
+      final monday = selectedDay.subtract(
+        Duration(days: selectedDay.weekday - 1),
+      );
       return filtered.where((a) {
-        return a.appointmentDate.isAfter(monday.subtract(const Duration(days: 1))) &&
+        return a.appointmentDate.isAfter(
+              monday.subtract(const Duration(days: 1)),
+            ) &&
             a.appointmentDate.isBefore(monday.add(const Duration(days: 7)));
       }).toList();
     } else {
-      return filtered.where((a) =>
-          a.appointmentDate.year == selectedDay.year &&
-          a.appointmentDate.month == selectedDay.month).toList();
+      return filtered
+          .where(
+            (a) =>
+                a.appointmentDate.year == selectedDay.year &&
+                a.appointmentDate.month == selectedDay.month,
+          )
+          .toList();
     }
   }
 
   bool hasAppointmentsOnDay(DateTime day, List<Appointment> all) {
     final filtered = _applyRoleFilter(all);
-    return filtered.any((a) =>
-        a.appointmentDate.year == day.year &&
-        a.appointmentDate.month == day.month &&
-        a.appointmentDate.day == day.day &&
-        a.status != 'cancelled');
+    return filtered.any(
+      (a) =>
+          a.appointmentDate.year == day.year &&
+          a.appointmentDate.month == day.month &&
+          a.appointmentDate.day == day.day &&
+          a.status != 'cancelled',
+    );
   }
 
   void showScheduleAppointmentDialog() {
@@ -142,7 +162,10 @@ class _AppointmentPageState extends State<AppointmentPage> {
     );
   }
 
-  void showPatientListDialog(String filterType, List<Appointment> allAppointments) {
+  void showPatientListDialog(
+    String filterType,
+    List<Appointment> allAppointments,
+  ) {
     final baseFiltered = _applyRoleFilter(allAppointments);
     final appointmentsToShow = filterType == 'all'
         ? baseFiltered
@@ -152,7 +175,9 @@ class _AppointmentPageState extends State<AppointmentPage> {
       context: context,
       builder: (_) {
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           backgroundColor: Colors.white,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
@@ -162,7 +187,9 @@ class _AppointmentPageState extends State<AppointmentPage> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey[200]!),
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -180,7 +207,10 @@ class _AppointmentPageState extends State<AppointmentPage> {
                           ),
                           Text(
                             '${appointmentsToShow.length} rendez-vous',
-                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
                           ),
                         ],
                       ),
@@ -197,23 +227,35 @@ class _AppointmentPageState extends State<AppointmentPage> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.inbox, size: 48, color: Colors.grey[300]),
+                              Icon(
+                                Icons.inbox,
+                                size: 48,
+                                color: Colors.grey[300],
+                              ),
                               const SizedBox(height: 12),
-                              Text('Aucun rendez-vous trouvé',
-                                  style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                              Text(
+                                'Aucun rendez-vous trouvé',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
                             ],
                           ),
                         )
                       : ListView.separated(
                           padding: const EdgeInsets.all(16),
                           itemCount: appointmentsToShow.length,
-                          separatorBuilder: (_, __) => Divider(color: Colors.grey[200], height: 1),
+                          separatorBuilder: (_, _) =>
+                              Divider(color: Colors.grey[200], height: 1),
                           itemBuilder: (context, index) {
                             final apt = appointmentsToShow[index];
                             return InkWell(
                               onTap: () => _showStatusChangePopup(apt),
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                                 child: Row(
                                   children: [
                                     Container(
@@ -221,15 +263,20 @@ class _AppointmentPageState extends State<AppointmentPage> {
                                       height: 50,
                                       decoration: BoxDecoration(
                                         color: filterType == 'all'
-                                            ? AppointmentUtils.getStatusColor(apt.status)
-                                            : AppointmentUtils.getTreatmentColor(apt.procedure),
+                                            ? AppointmentUtils.getStatusColor(
+                                                apt.status,
+                                              )
+                                            : AppointmentUtils.getTreatmentColor(
+                                                apt.procedure,
+                                              ),
                                         borderRadius: BorderRadius.circular(2),
                                       ),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             apt.patientName,
@@ -241,12 +288,19 @@ class _AppointmentPageState extends State<AppointmentPage> {
                                           const SizedBox(height: 4),
                                           Text(
                                             '${apt.procedure} • ${apt.time}',
-                                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey[600],
+                                            ),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey[400]),
+                                    Icon(
+                                      Icons.arrow_forward_ios,
+                                      size: 14,
+                                      color: Colors.grey[400],
+                                    ),
                                   ],
                                 ),
                               ),
@@ -276,17 +330,18 @@ class _AppointmentPageState extends State<AppointmentPage> {
         return 'Rendez-vous';
     }
   }
+
   void navigateToAppointmentDetail(Appointment appointment) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => AppointmentDetailPage(
-        appointment: appointment,
-        onBack: () => context.read<AppointmentBloc>().add(LoadAppointments()),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AppointmentDetailPage(
+          appointment: appointment,
+          onBack: () => context.read<AppointmentBloc>().add(LoadAppointments()),
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   // NEW: Small popup for changing status
   void _showStatusChangePopup(Appointment apt) {
@@ -301,9 +356,14 @@ class _AppointmentPageState extends State<AppointmentPage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Patient: ${apt.patientName}', style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(
+              'Patient: ${apt.patientName}',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
             Text('Médecin: ${apt.doctorName}'),
-            Text('Date: ${DateFormat('EEEE d MMMM yyyy').format(apt.appointmentDate)}'),
+            Text(
+              'Date: ${DateFormat('EEEE d MMMM yyyy').format(apt.appointmentDate)}',
+            ),
             Text('Heure: ${apt.time}'),
             Text('Traitement: ${apt.procedure}'),
             const SizedBox(height: 16),
@@ -357,16 +417,24 @@ class _AppointmentPageState extends State<AppointmentPage> {
         if (state is AppointmentLoading) {
           return const Scaffold(
             backgroundColor: Color(0xFFF3F4F6),
-            body: Center(child: CircularProgressIndicator(color: Color(0xFF3B82F6))),
+            body: Center(
+              child: CircularProgressIndicator(color: Color(0xFF3B82F6)),
+            ),
           );
         } else if (state is AppointmentLoadSuccess) {
           final allAppointments = state.appointments;
           final filteredAppointments = getFilteredAppointments(allAppointments);
           final todayAppointments = getTodayAppointments(allAppointments);
 
-          final confirmed = filteredAppointments.where((a) => a.status == 'confirmed').length;
-          final pending = filteredAppointments.where((a) => a.status == 'pending').length;
-          final cancelled = filteredAppointments.where((a) => a.status == 'cancelled').length;
+          final confirmed = filteredAppointments
+              .where((a) => a.status == 'confirmed')
+              .length;
+          final pending = filteredAppointments
+              .where((a) => a.status == 'pending')
+              .length;
+          final cancelled = filteredAppointments
+              .where((a) => a.status == 'cancelled')
+              .length;
 
           final screenWidth = MediaQuery.of(context).size.width;
 
@@ -401,13 +469,20 @@ class _AppointmentPageState extends State<AppointmentPage> {
                 children: [
                   const Icon(Icons.error_outline, size: 64, color: Colors.red),
                   const SizedBox(height: 16),
-                  const Text('Erreur de chargement',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Erreur de chargement',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(height: 8),
-                  Text(state.error, style: const TextStyle(fontSize: 14), textAlign: TextAlign.center),
+                  Text(
+                    state.error,
+                    style: const TextStyle(fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
-                    onPressed: () => context.read<AppointmentBloc>().add(LoadAppointments()),
+                    onPressed: () =>
+                        context.read<AppointmentBloc>().add(LoadAppointments()),
                     icon: const Icon(Icons.refresh),
                     label: const Text('Réessayer'),
                     style: ElevatedButton.styleFrom(
@@ -428,12 +503,28 @@ class _AppointmentPageState extends State<AppointmentPage> {
     );
   }
 
-  Widget _buildSingleColumn(List<Appointment> all, List<Appointment> filtered, List<Appointment> todayApps,
-      int confirmed, int pending, int cancelled, double width) {
+  Widget _buildSingleColumn(
+    List<Appointment> all,
+    List<Appointment> filtered,
+    List<Appointment> todayApps,
+    int confirmed,
+    int pending,
+    int cancelled,
+    double width,
+  ) {
     return SingleChildScrollView(
       child: Column(
         children: [
-          _buildHeader(all, filtered, todayApps, confirmed, pending, cancelled, width, true),
+          _buildHeader(
+            all,
+            filtered,
+            todayApps,
+            confirmed,
+            pending,
+            cancelled,
+            width,
+            true,
+          ),
           Container(
             color: Colors.white,
             padding: const EdgeInsets.all(20),
@@ -442,7 +533,6 @@ class _AppointmentPageState extends State<AppointmentPage> {
                 _buildCalendarHeader(),
                 const SizedBox(height: 16),
                 _buildCalendarGrid(all),
-                
               ],
             ),
           ),
@@ -456,11 +546,27 @@ class _AppointmentPageState extends State<AppointmentPage> {
     );
   }
 
-  Widget _buildDualColumn(List<Appointment> all, List<Appointment> filtered, List<Appointment> todayApps,
-      int confirmed, int pending, int cancelled, double width) {
+  Widget _buildDualColumn(
+    List<Appointment> all,
+    List<Appointment> filtered,
+    List<Appointment> todayApps,
+    int confirmed,
+    int pending,
+    int cancelled,
+    double width,
+  ) {
     return Column(
       children: [
-        _buildHeader(all, filtered, todayApps, confirmed, pending, cancelled, width, false),
+        _buildHeader(
+          all,
+          filtered,
+          todayApps,
+          confirmed,
+          pending,
+          cancelled,
+          width,
+          false,
+        ),
         Expanded(
           child: Row(
             children: [
@@ -473,7 +579,6 @@ class _AppointmentPageState extends State<AppointmentPage> {
                     _buildCalendarHeader(),
                     const SizedBox(height: 16),
                     Expanded(child: _buildCalendarGrid(all)),
-                    
                   ],
                 ),
               ),
@@ -491,8 +596,16 @@ class _AppointmentPageState extends State<AppointmentPage> {
     );
   }
 
-  Widget _buildHeader(List<Appointment> all, List<Appointment> filtered, List<Appointment> todayApps,
-      int confirmed, int pending, int cancelled, double width, bool compact) {
+  Widget _buildHeader(
+    List<Appointment> all,
+    List<Appointment> filtered,
+    List<Appointment> todayApps,
+    int confirmed,
+    int pending,
+    int cancelled,
+    double width,
+    bool compact,
+  ) {
     return Container(
       padding: EdgeInsets.all(compact ? 20 : 24),
       color: Colors.white,
@@ -514,7 +627,10 @@ class _AppointmentPageState extends State<AppointmentPage> {
                   ),
                   Text(
                     'Gérer et planifier les rendez-vous',
-                    style: TextStyle(fontSize: compact ? 12 : 14, color: Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: compact ? 12 : 14,
+                      color: Colors.grey[600],
+                    ),
                   ),
                 ],
               ),
@@ -569,14 +685,41 @@ class _AppointmentPageState extends State<AppointmentPage> {
             ],
           ),
           const SizedBox(height: 16),
-          Wrap(
+          Row(
             spacing: 12,
-            runSpacing: 12,
             children: [
-              _buildStatCard('Total', '${filtered.length}', const Color(0xFF3B82F6), 'all', filtered, width),
-              _buildStatCard('Confirmés', '$confirmed', AppointmentUtils.confirmedColor, 'confirmed', filtered, width),
-              _buildStatCard('En attente', '$pending', AppointmentUtils.pendingColor, 'pending', filtered, width),
-              _buildStatCard('Annulés', '$cancelled', AppointmentUtils.cancelledColor, 'cancelled', filtered, width),
+              _buildStatCard(
+                'Total',
+                '${filtered.length}',
+                const Color(0xFF3B82F6),
+                'all',
+                filtered,
+                width,
+              ),
+              _buildStatCard(
+                'Confirmés',
+                '$confirmed',
+                AppointmentUtils.confirmedColor,
+                'confirmed',
+                filtered,
+                width,
+              ),
+              _buildStatCard(
+                'En attente',
+                '$pending',
+                AppointmentUtils.pendingColor,
+                'pending',
+                filtered,
+                width,
+              ),
+              _buildStatCard(
+                'Annulés',
+                '$cancelled',
+                AppointmentUtils.cancelledColor,
+                'cancelled',
+                filtered,
+                width,
+              ),
             ],
           ),
         ],
@@ -591,11 +734,17 @@ class _AppointmentPageState extends State<AppointmentPage> {
       value: selectedFilterDoctorId,
       hint: const Text('Tous les médecins'),
       items: [
-        const DropdownMenuItem<int?>(value: null, child: Text('Tous les médecins')),
+        const DropdownMenuItem<int?>(
+          value: null,
+          child: Text('Tous les médecins'),
+        ),
         ...doctors.map((doc) {
           final name = '${doc['first_name']} ${doc['last_name']}'.trim();
-          return DropdownMenuItem<int?>(value: doc['id'] as int, child: Text(name));
-        }).toList(),
+          return DropdownMenuItem<int?>(
+            value: doc['id'] as int,
+            child: Text(name),
+          );
+        }),
       ],
       onChanged: (value) {
         setState(() {
@@ -617,17 +766,23 @@ class _AppointmentPageState extends State<AppointmentPage> {
         backgroundColor: isActive ? const Color(0xFF3B82F6) : Colors.white,
         foregroundColor: isActive ? Colors.white : Colors.grey[700],
         elevation: 0,
-        side: BorderSide(color: isActive ? Colors.transparent : const Color(0xFFE5E7EB)),
+        side: BorderSide(
+          color: isActive ? Colors.transparent : const Color(0xFFE5E7EB),
+        ),
       ),
       child: Text(mode),
     );
   }
 
-  Widget _buildStatCard(String title, String value, Color color, String type,
-      List<Appointment> filtered, double width) {
-    double cardWidth = width > 900 ? (width - 100) / 4 : (width - 80) / 2;
-    return SizedBox(
-      width: cardWidth,
+  Widget _buildStatCard(
+    String title,
+    String value,
+    Color color,
+    String type,
+    List<Appointment> filtered,
+    double width,
+  ) {
+    return Expanded(
       child: InkWell(
         onTap: () => showPatientListDialog(type, filtered),
         child: Container(
@@ -645,18 +800,29 @@ class _AppointmentPageState extends State<AppointmentPage> {
                   Container(
                     width: 6,
                     height: 6,
-                    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
                   ),
                   const SizedBox(width: 6),
                   Expanded(
-                    child: Text(title,
-                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                        overflow: TextOverflow.ellipsis),
+                    child: Text(
+                      title,
+                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
         ),
@@ -668,20 +834,28 @@ class _AppointmentPageState extends State<AppointmentPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text('Calendrier',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const Text(
+          'Calendrier',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
         Row(
           children: [
             IconButton(
               icon: const Icon(Icons.chevron_left, size: 20),
               onPressed: () => setState(() {
-                calendarMonth = DateTime(calendarMonth.year, calendarMonth.month - 1);
+                calendarMonth = DateTime(
+                  calendarMonth.year,
+                  calendarMonth.month - 1,
+                );
               }),
             ),
             IconButton(
               icon: const Icon(Icons.chevron_right, size: 20),
               onPressed: () => setState(() {
-                calendarMonth = DateTime(calendarMonth.year, calendarMonth.month + 1);
+                calendarMonth = DateTime(
+                  calendarMonth.year,
+                  calendarMonth.month + 1,
+                );
               }),
             ),
           ],
@@ -695,8 +869,10 @@ class _AppointmentPageState extends State<AppointmentPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(DateFormat('MMMM yyyy').format(calendarMonth),
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+          Text(
+            DateFormat('MMMM yyyy').format(calendarMonth),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 12),
           GridView.builder(
             shrinkWrap: true,
@@ -708,12 +884,21 @@ class _AppointmentPageState extends State<AppointmentPage> {
             ),
             itemCount: 35,
             itemBuilder: (context, index) {
-              final firstDay = DateTime(calendarMonth.year, calendarMonth.month, 1);
+              final firstDay = DateTime(
+                calendarMonth.year,
+                calendarMonth.month,
+                1,
+              );
               final day = index - firstDay.weekday + 2;
               if (day < 1 || day > 31) return const SizedBox();
 
-              final date = DateTime(calendarMonth.year, calendarMonth.month, day);
-              final isSelected = selectedDay.year == date.year &&
+              final date = DateTime(
+                calendarMonth.year,
+                calendarMonth.month,
+                day,
+              );
+              final isSelected =
+                  selectedDay.year == date.year &&
                   selectedDay.month == date.month &&
                   selectedDay.day == date.day;
               final hasAppts = hasAppointmentsOnDay(date, appointments);
@@ -722,7 +907,9 @@ class _AppointmentPageState extends State<AppointmentPage> {
                 onTap: () => setState(() => selectedDay = date),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFF3B82F6) : Colors.transparent,
+                    color: isSelected
+                        ? const Color(0xFF3B82F6)
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(6),
                     border: hasAppts && !isSelected
                         ? Border.all(color: const Color(0xFF3B82F6), width: 2)
@@ -733,7 +920,9 @@ class _AppointmentPageState extends State<AppointmentPage> {
                       '$day',
                       style: TextStyle(
                         fontSize: 12,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                         color: isSelected ? Colors.white : Colors.black87,
                       ),
                     ),
@@ -747,7 +936,6 @@ class _AppointmentPageState extends State<AppointmentPage> {
     );
   }
 
-
   Widget _buildAppointmentsList(List<Appointment> appointments) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -760,7 +948,10 @@ class _AppointmentPageState extends State<AppointmentPage> {
               children: [
                 Text(
                   DateFormat('EEEE, MMMM d, yyyy').format(selectedDay),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 Text(
                   '${appointments.length} rendez-vous',
@@ -777,10 +968,16 @@ class _AppointmentPageState extends State<AppointmentPage> {
                 child: Column(
                   children: [
                     const SizedBox(height: 40),
-                    Icon(Icons.calendar_today, size: 48, color: Colors.grey[400]),
+                    Icon(
+                      Icons.calendar_today,
+                      size: 48,
+                      color: Colors.grey[400],
+                    ),
                     const SizedBox(height: 16),
-                    Text('Aucun rendez-vous planifié',
-                        style: TextStyle(fontSize: 16, color: Colors.grey[600])),
+                    Text(
+                      'Aucun rendez-vous planifié',
+                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                    ),
                   ],
                 ),
               )
@@ -788,7 +985,6 @@ class _AppointmentPageState extends State<AppointmentPage> {
       ],
     );
   }
-  
 
   Widget _buildTimelineView(List<Appointment> appointments) {
     final sorted = List<Appointment>.from(appointments)
@@ -832,7 +1028,11 @@ class _AppointmentPageState extends State<AppointmentPage> {
                   width: 60,
                   child: Text(
                     '${hour.toString().padLeft(2, '0')}:00',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey[700]),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                    ),
                   ),
                 ),
                 Expanded(
@@ -843,28 +1043,49 @@ class _AppointmentPageState extends State<AppointmentPage> {
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: InkWell(
                             onTap: isDoctor
-    ? () => navigateToAppointmentDetail(apt)  // Doctor → full detail page
-    : () => _showStatusChangePopup(apt),      // Receptionist/Admin → status popup // ← Popup instead of detail page
+                                ? () =>
+                                      navigateToAppointmentDetail(
+                                        apt,
+                                      ) // Doctor → full detail page
+                                : () => _showStatusChangePopup(
+                                    apt,
+                                  ), // Receptionist/Admin → status popup // ← Popup instead of detail page
                             child: Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 color: apt.cardColor,
                                 borderRadius: BorderRadius.circular(12),
-                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 6)],
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.1),
+                                    blurRadius: 6,
+                                  ),
+                                ],
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     apt.patientName,
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    isSingleDoctor ? apt.procedure : apt.doctorName,
-                                    style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
+                                    isSingleDoctor
+                                        ? apt.procedure
+                                        : apt.doctorName,
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.9,
+                                      ),
+                                      fontSize: 13,
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),

@@ -7,10 +7,10 @@ class DeleteConfirmationDialog extends StatelessWidget {
   final String itemType;
 
   const DeleteConfirmationDialog({
-    Key? key,
+    super.key,
     required this.itemName,
     required this.itemType,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

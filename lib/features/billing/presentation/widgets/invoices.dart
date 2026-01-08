@@ -17,12 +17,12 @@ class BillingTableControls extends StatelessWidget {
   final Function(String)? onSearchChanged;
 
   const BillingTableControls({
-    Key? key,
+    super.key,
     required this.responsive,
     this.selectedStatus = 'Tous les statuts',
     required this.onStatusChanged,
     this.onSearchChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -120,10 +120,10 @@ class InvoiceTable extends StatelessWidget {
   final BillingResponsiveHelper responsive;
 
   const InvoiceTable({
-    Key? key,
+    super.key,
     required this.invoices,
     required this.responsive,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -196,7 +196,7 @@ class InvoiceTable extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
+        color: statusColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(

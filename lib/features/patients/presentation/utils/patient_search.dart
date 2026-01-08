@@ -8,7 +8,7 @@ List<Patient> filterPatients(String query, List<Patient> patients) {
   return patients.where((p) {
     final first = p.firstName?.toLowerCase() ?? '';
     final last = p.lastName?.toLowerCase() ?? '';
-    final full = ('$first ${last}').trim();
+    final full = ('$first $last').trim();
     final idStr = p.id != null ? 'p${p.id}'.toLowerCase() : '';
     final email = p.email?.toLowerCase() ?? '';
     final phone = p.phone1?.toLowerCase() ?? '';

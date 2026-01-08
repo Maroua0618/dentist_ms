@@ -11,7 +11,7 @@ import '../../models/invoice.dart';
 class BillingHeader extends StatelessWidget {
   final BillingResponsiveHelper responsive;
 
-  const BillingHeader({Key? key, required this.responsive}) : super(key: key);
+  const BillingHeader({super.key, required this.responsive});
 
   @override
   Widget build(BuildContext context) {

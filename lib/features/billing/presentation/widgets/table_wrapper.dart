@@ -8,11 +8,11 @@ class BillingTableWrapper extends StatelessWidget {
   final Widget? searchControls;
 
   const BillingTableWrapper({
-    Key? key,
+    super.key,
     required this.headers,
     required this.rows,
     this.searchControls,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -61,8 +61,7 @@ class BillingTableRow extends StatelessWidget {
   final List<Widget> cells;
   final bool isLast;
 
-  const BillingTableRow({Key? key, required this.cells, this.isLast = false})
-    : super(key: key);
+  const BillingTableRow({super.key, required this.cells, this.isLast = false});
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +71,9 @@ class BillingTableRow extends StatelessWidget {
         border: isLast
             ? null
             : Border(
-                bottom: BorderSide(color: AppColors.border.withOpacity(0.3)),
+                bottom: BorderSide(
+                  color: AppColors.border.withValues(alpha: 0.3),
+                ),
               ),
       ),
       child: Row(

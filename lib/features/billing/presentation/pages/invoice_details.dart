@@ -21,8 +21,7 @@ import 'package:dentist_ms/features/billing/data/payment_remote.dart';
 
 class InvoiceDetailScreenWrapper extends StatelessWidget {
   final int invoiceId;
-  const InvoiceDetailScreenWrapper({Key? key, required this.invoiceId})
-    : super(key: key);
+  const InvoiceDetailScreenWrapper({super.key, required this.invoiceId});
 
   @override
   Widget build(BuildContext context) {
@@ -49,8 +48,7 @@ class InvoiceDetailScreenWrapper extends StatelessWidget {
 class InvoiceDetailScreen extends StatefulWidget {
   final int invoiceId;
 
-  const InvoiceDetailScreen({Key? key, required this.invoiceId})
-    : super(key: key);
+  const InvoiceDetailScreen({super.key, required this.invoiceId});
 
   @override
   State<InvoiceDetailScreen> createState() => _InvoiceDetailScreenState();
@@ -211,7 +209,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
+        color: statusColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -474,7 +472,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
     return TableRow(
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: AppColors.border.withOpacity(0.5)),
+          bottom: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
         ),
       ),
       children: [

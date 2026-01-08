@@ -25,6 +25,7 @@ class _AddPrescriptionDialogState extends State<AddPrescriptionDialog> {
   final List<Map<String, dynamic>> _medications = [];
   List<Map<String, dynamic>> _availableMedications = [];
   bool _isSaving = false;
+  // ignore: unused_field
   bool _isLoadingMedications = true;
 
   final List<Map<String, String>> _routeOptions = const [

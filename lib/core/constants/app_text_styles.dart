@@ -67,5 +67,5 @@ class AppTextStyles {
     color: AppColors.textSecondary,
   );
 
-  static get bodyText => null;
+  static Null get bodyText => null;
 }

@@ -47,7 +47,7 @@ class _BillingTab {
 
 class BillingsPage extends StatefulWidget {
   final UserRole? role;
-  const BillingsPage({Key? key, this.role}) : super(key: key);
+  const BillingsPage({super.key, this.role});
 
   @override
   State<BillingsPage> createState() => _BillingsPageState();
@@ -433,7 +433,7 @@ class _BillingsPageState extends State<BillingsPage>
                     });
                   },
                 ),
-              Container(
+              SizedBox(
                 height: 500,
                 child: BillingTreatmentCatalogTable(
                   treatments: filteredTreatments,
@@ -507,7 +507,7 @@ class _BillingsPageState extends State<BillingsPage>
                   },
                   categories: categories,
                 ),
-              Container(
+              SizedBox(
                 height: 500,
                 child: BillingExpensesTable(
                   expenses: expensesData,
@@ -587,7 +587,7 @@ class _BillingsPageState extends State<BillingsPage>
                 },
                 patients: patients,
               ),
-              Container(
+              SizedBox(
                 height: 500,
                 child: BillingPaymentHistoryTable(
                   payments: paymentsData,
@@ -603,7 +603,7 @@ class _BillingsPageState extends State<BillingsPage>
 }
 
 class BillingsPageWrapper extends StatelessWidget {
-  const BillingsPageWrapper({Key? key}) : super(key: key);
+  const BillingsPageWrapper({super.key});
 
   @override
   Widget build(BuildContext context) {

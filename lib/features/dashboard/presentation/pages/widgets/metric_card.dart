@@ -5,10 +5,10 @@ import '../dashboard_constants.dart';
 class MetricCard extends StatelessWidget {
   const MetricCard({
     super.key,
-    required this. color,
+    required this.color,
     required this.icon,
     required this.trendingIcon,
-    required this. title,
+    required this.title,
     required this.value,
     required this.subNote,
   });
@@ -27,9 +27,9 @@ class MetricCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(kRadiusCard),
-        boxShadow:  [
+        boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.28),
+            color: color.withValues(alpha: 0.28),
             blurRadius: 32,
             offset: const Offset(0, 18),
           ),
@@ -41,14 +41,17 @@ class MetricCard extends StatelessWidget {
           Positioned(
             top: 6,
             right: 6,
-            child:  Icon(trendingIcon, color: kNeutralIcon. withOpacity(0.9)),
+            child: Icon(
+              trendingIcon,
+              color: kNeutralIcon.withValues(alpha: 0.9),
+            ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white. withOpacity(0.18),
+                  color: Colors.white.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 padding: const EdgeInsets.all(10),
@@ -67,7 +70,7 @@ class MetricCard extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               FittedBox(
-                fit:  BoxFit.scaleDown,
+                fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: Text(
                   value,
@@ -87,16 +90,16 @@ class MetricCard extends StatelessWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.18),
+                    color: Colors.white.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Row(
-                    mainAxisSize:  MainAxisSize.min,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(
                         Icons.arrow_upward_rounded,
                         size: 16,
-                        color: Colors. white,
+                        color: Colors.white,
                       ),
                       const SizedBox(width: 4),
                       Flexible(

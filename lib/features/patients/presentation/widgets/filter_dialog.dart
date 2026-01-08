@@ -37,7 +37,7 @@ class _PatientFilterDialogState extends State<PatientFilterDialog> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF4F7EFF).withOpacity(0.1),
+              color: const Color(0xFF4F7EFF).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(Icons.filter_alt, color: Color(0xFF4F7EFF)),

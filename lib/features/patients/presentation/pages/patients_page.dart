@@ -54,6 +54,25 @@ class _PatientsPageState extends State<PatientsPage> {
       full['email'] = resp['email'];
       full['address'] = resp['address'];
       full['status'] = resp['status'];
+      full['profileImageUrl'] = resp['profile_image_url']; // ADD THIS LINE
+
+      // Calculate age from date of birth
+      if (resp['date_of_birth'] != null) {
+        try {
+          final dob = DateTime.parse(resp['date_of_birth']);
+          final today = DateTime.now();
+          int age = today.year - dob.year;
+          if (today.month < dob.month ||
+              (today.month == dob.month && today.day < dob.day)) {
+            age--;
+          }
+          full['age'] = age;
+        } catch (_) {
+          full['age'] = 0;
+        }
+      } else {
+        full['age'] = 0;
+      }
 
       final List<dynamic> treatments =
           resp['patient_treatments'] as List<dynamic>? ?? [];
@@ -118,13 +137,15 @@ class _PatientsPageState extends State<PatientsPage> {
         String reaction = '';
         if (notes.isNotEmpty) {
           final parts = notes.split('\n');
-          if (parts.isNotEmpty)
+          if (parts.isNotEmpty) {
             severity = parts.first.replaceFirst('Severity: ', '');
-          if (parts.length > 1)
+          }
+          if (parts.length > 1) {
             reaction = parts
                 .sublist(1)
                 .join('\n')
                 .replaceFirst('Reaction: ', '');
+          }
         }
         return {
           'id': map['id'],

@@ -96,8 +96,15 @@ class _SettingsPageState extends State<SettingsPage>
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: TabBar(
                   controller: _tabController,
@@ -112,7 +119,7 @@ class _SettingsPageState extends State<SettingsPage>
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
@@ -133,9 +140,9 @@ class _SettingsPageState extends State<SettingsPage>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.local_hospital, size: 20),
+                          Icon(Icons.business_rounded, size: 20),
                           SizedBox(width: 8),
-                          Text('Clinic Info'),
+                          Text('Clinique'),
                         ],
                       ),
                     ),
@@ -143,7 +150,7 @@ class _SettingsPageState extends State<SettingsPage>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.person, size: 20),
+                          Icon(Icons.person_rounded, size: 20),
                           SizedBox(width: 8),
                           Text('Profil'),
                         ],
@@ -153,7 +160,7 @@ class _SettingsPageState extends State<SettingsPage>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.lock, size: 20),
+                          Icon(Icons.shield_rounded, size: 20),
                           SizedBox(width: 8),
                           Text('Sécurité'),
                         ],
@@ -167,32 +174,55 @@ class _SettingsPageState extends State<SettingsPage>
 
               // TabBarView
               Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    // Clinic Info Tab
-                    SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: clinic(context, width, height, clinicControllers),
-                    ),
-
-                    // Profile Tab
-                    SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: profil(context, width, height, profilControllers),
-                    ),
-
-                    // Security Tab
-                    SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: security(
-                        context,
-                        width,
-                        height,
-                        securityControllers,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      // Clinic Info Tab
+                      SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: clinic(
+                          context,
+                          width,
+                          height,
+                          clinicControllers,
+                        ),
+                      ),
+
+                      // Profile Tab
+                      SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: profil(
+                          context,
+                          width,
+                          height,
+                          profilControllers,
+                        ),
+                      ),
+
+                      // Security Tab
+                      SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: security(
+                          context,
+                          width,
+                          height,
+                          securityControllers,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

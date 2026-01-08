@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
-import 'dart:typed_data';
 import '../models/appointment_model.dart';
 import 'prescription_pdf_generator.dart';
 
@@ -51,9 +50,9 @@ class PrescriptionsTab extends StatelessWidget {
         prescription: prescription,
         appointment: appointment,
       );
-      
+
       if (!context.mounted) return;
-      
+
       showDialog(
         context: context,
         builder: (context) => Dialog(
@@ -167,7 +166,10 @@ class PrescriptionsTab extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF10B981),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
             ),
           ],
@@ -180,7 +182,11 @@ class PrescriptionsTab extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.medical_services_outlined, size: 64, color: Colors.grey[300]),
+                  Icon(
+                    Icons.medical_services_outlined,
+                    size: 64,
+                    color: Colors.grey[300],
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'Aucune ordonnance disponible',
@@ -203,7 +209,9 @@ class PrescriptionsTab extends StatelessWidget {
             itemBuilder: (context, index) {
               final prescription = prescriptions[index];
               final date = prescription['issued_at'] != null
-                  ? DateFormat('d MMMM yyyy').format(DateTime.parse(prescription['issued_at']))
+                  ? DateFormat(
+                      'd MMMM yyyy',
+                    ).format(DateTime.parse(prescription['issued_at']))
                   : '';
               final items = (prescription['items'] as List<dynamic>?) ?? [];
 
@@ -216,7 +224,7 @@ class PrescriptionsTab extends StatelessWidget {
                   border: Border.all(color: const Color(0xFFE5E7EB)),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -252,13 +260,17 @@ class PrescriptionsTab extends StatelessWidget {
                           ),
                         ),
                         ElevatedButton.icon(
-                          onPressed: () => _viewPrescriptionPDF(context, prescription),
+                          onPressed: () =>
+                              _viewPrescriptionPDF(context, prescription),
                           icon: const Icon(Icons.visibility, size: 16),
                           label: const Text('Voir PDF'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF3B82F6),
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
                           ),
                         ),
                       ],
@@ -283,7 +295,8 @@ class PrescriptionsTab extends StatelessWidget {
                         ),
                       ],
                     ),
-                    if (prescription['notes'] != null && prescription['notes'].toString().isNotEmpty) ...[
+                    if (prescription['notes'] != null &&
+                        prescription['notes'].toString().isNotEmpty) ...[
                       const SizedBox(height: 16),
                       Container(
                         padding: const EdgeInsets.all(12),
@@ -332,10 +345,14 @@ class PrescriptionsTab extends StatelessWidget {
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF3B82F6).withOpacity(0.05),
+                            color: const Color(
+                              0xFF3B82F6,
+                            ).withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: const Color(0xFF3B82F6).withOpacity(0.2),
+                              color: const Color(
+                                0xFF3B82F6,
+                              ).withValues(alpha: 0.2),
                             ),
                           ),
                           child: Column(
@@ -366,7 +383,9 @@ class PrescriptionsTab extends StatelessWidget {
                                 ),
                               ),
                               if (item['instructions'] != null &&
-                                  item['instructions'].toString().isNotEmpty) ...[
+                                  item['instructions']
+                                      .toString()
+                                      .isNotEmpty) ...[
                                 const SizedBox(height: 4),
                                 Text(
                                   'Instructions: ${item['instructions']}',
@@ -409,10 +428,7 @@ class PrescriptionsTab extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey[500],
-                  ),
+                  style: TextStyle(fontSize: 10, color: Colors.grey[500]),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

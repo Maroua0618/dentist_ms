@@ -5,7 +5,7 @@ class AppTheme {
   static ThemeData lightTheme = ThemeData(
     // fontFamily: 'SegoeUI',
     scaffoldBackgroundColor: AppColors.background,
-    primaryColor: AppColors.primary, 
+    primaryColor: AppColors.primary,
     brightness: Brightness.light,
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.white,
@@ -43,8 +43,8 @@ class AppTheme {
       ),
     ),
     textSelectionTheme: TextSelectionThemeData(
-      cursorColor: AppColors.primary,  
-      selectionColor: AppColors.primary.withOpacity(0.3),
+      cursorColor: AppColors.primary,
+      selectionColor: AppColors.primary.withValues(alpha: 0.3),
       selectionHandleColor: AppColors.primary,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(

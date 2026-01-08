@@ -59,7 +59,7 @@ class InvoiceRemoteDataSource {
           .eq('id', id)
           .single();
 
-      return Invoice.fromJson(response as Map<String, dynamic>);
+      return Invoice.fromJson(response);
     } catch (e) {
       throw Exception('Failed to fetch invoice: $e');
     }
@@ -77,7 +77,7 @@ class InvoiceRemoteDataSource {
           ''')
           .single();
 
-      return Invoice.fromJson(response as Map<String, dynamic>);
+      return Invoice.fromJson(response);
     } catch (e) {
       throw Exception('Failed to create invoice: $e');
     }
@@ -96,7 +96,7 @@ class InvoiceRemoteDataSource {
           ''')
           .single();
 
-      return Invoice.fromJson(response as Map<String, dynamic>);
+      return Invoice.fromJson(response);
     } catch (e) {
       throw Exception('Failed to update invoice: $e');
     }

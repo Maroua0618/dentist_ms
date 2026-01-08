@@ -7,7 +7,7 @@ import 'package:dentist_ms/features/billing/data/expense_category_remote.dart';
 class AddExpenseDialog extends StatefulWidget {
   final Map<String, dynamic>? expense;
 
-  const AddExpenseDialog({Key? key, this.expense}) : super(key: key);
+  const AddExpenseDialog({super.key, this.expense});
 
   @override
   State<AddExpenseDialog> createState() => _AddExpenseDialogState();
@@ -222,7 +222,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
           controller: _amountController,
           decoration: _inputDecoration(
             '0.00',
-          ).copyWith(suffixText: '\DA ', suffixStyle: AppTextStyles.body1),
+          ).copyWith(suffixText: 'DA ', suffixStyle: AppTextStyles.body1),
           keyboardType: TextInputType.number,
           validator: (value) {
             if (value == null || value.isEmpty) {

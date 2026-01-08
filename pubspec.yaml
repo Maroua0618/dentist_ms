@@ -44,13 +44,16 @@ dependencies:
 
   fl_chart: ^0.68.0
   image_picker: ^1.2.1
-  file_picker: ^8.1.6
+  file_picker: ^10.3.8
   url_launcher: ^6.3.1
   pdf: ^3.10.8
   printing: ^5.12.0
   path_provider: ^2.1.2
   universal_html: ^2.2.4   
   excel: ^4.0.6
+  http: ^1.6.0
+  path: ^1.9.1
+  camera: ^0.11.3
   
 dev_dependencies:
   flutter_test:

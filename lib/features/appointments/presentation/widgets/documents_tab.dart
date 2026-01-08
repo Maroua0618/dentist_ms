@@ -10,10 +10,7 @@ import 'document_viewer_dialog.dart';
 class DocumentsTab extends StatefulWidget {
   final Appointment appointment;
 
-  const DocumentsTab({
-    super.key,
-    required this.appointment,
-  });
+  const DocumentsTab({super.key, required this.appointment});
 
   @override
   State<DocumentsTab> createState() => _DocumentsTabState();
@@ -41,7 +38,9 @@ class _DocumentsTabState extends State<DocumentsTab> {
 
       final response = await Supabase.instance.client
           .from('patient_documents')
-          .select('*, uploader:users!uploaded_by_user_id(first_name, last_name)')
+          .select(
+            '*, uploader:users!uploaded_by_user_id(first_name, last_name)',
+          )
           .eq('patient_id', widget.appointment.patientId!)
           .order('uploaded_at', ascending: false);
 
@@ -218,9 +217,9 @@ class _DocumentsTabState extends State<DocumentsTab> {
 
     try {
       // Delete from storage
-      await Supabase.instance.client.storage
-          .from('documents')
-          .remove([filePath]);
+      await Supabase.instance.client.storage.from('documents').remove([
+        filePath,
+      ]);
 
       // Delete from database
       await Supabase.instance.client
@@ -252,7 +251,11 @@ class _DocumentsTabState extends State<DocumentsTab> {
     }
   }
 
-  Future<void> _viewDocument(String filePath, String fileName, String fileType) async {
+  Future<void> _viewDocument(
+    String filePath,
+    String fileName,
+    String fileType,
+  ) async {
     showDialog(
       context: context,
       builder: (context) => DocumentViewerDialog(
@@ -270,7 +273,7 @@ class _DocumentsTabState extends State<DocumentsTab> {
           .getPublicUrl(filePath);
 
       final uri = Uri.parse(url);
-      
+
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
@@ -379,10 +382,7 @@ class _DocumentsTabState extends State<DocumentsTab> {
                   const SizedBox(height: 16),
                   Text(
                     'Aucun document',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -393,7 +393,7 @@ class _DocumentsTabState extends State<DocumentsTab> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: documents.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final doc = documents[index];
               final fileType = doc['file_type'] as String? ?? '';
@@ -417,7 +417,7 @@ class _DocumentsTabState extends State<DocumentsTab> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _getFileColor(fileType).withOpacity(0.1),
+                        color: _getFileColor(fileType).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
@@ -477,15 +477,9 @@ class _DocumentsTabState extends State<DocumentsTab> {
                             doc['file_type'] ?? '',
                           );
                         } else if (value == 'download') {
-                          _downloadDocument(
-                            doc['file_path'],
-                            doc['file_name'],
-                          );
+                          _downloadDocument(doc['file_path'], doc['file_name']);
                         } else if (value == 'delete') {
-                          _deleteDocument(
-                            doc['id'],
-                            doc['file_path'],
-                          );
+                          _deleteDocument(doc['id'], doc['file_path']);
                         }
                       },
                       itemBuilder: (context) => [

@@ -11,13 +11,13 @@ class BillingControls extends StatelessWidget {
   final VoidCallback onButtonPressed;
 
   const BillingControls({
-    Key? key,
+    super.key,
     required this.responsive,
     required this.leftWidget,
     required this.buttonText,
     this.buttonIcon = Icons.add,
     required this.onButtonPressed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -56,8 +56,7 @@ class BillingSearchField extends StatelessWidget {
   final String hintText;
   final Function(String)? onChanged;
 
-  const BillingSearchField({Key? key, required this.hintText, this.onChanged})
-    : super(key: key);
+  const BillingSearchField({super.key, required this.hintText, this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -101,12 +100,12 @@ class BillingDropdownFilter extends StatelessWidget {
   final IconData prefixIcon;
 
   const BillingDropdownFilter({
-    Key? key,
+    super.key,
     required this.value,
     required this.items,
     required this.onChanged,
     this.prefixIcon = Icons.filter_list,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

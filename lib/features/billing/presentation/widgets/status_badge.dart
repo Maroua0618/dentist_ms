@@ -5,7 +5,7 @@ import 'package:dentist_ms/core/constants/app_text_styles.dart';
 class BillingStatusBadge extends StatelessWidget {
   final String status;
 
-  const BillingStatusBadge({Key? key, required this.status}) : super(key: key);
+  const BillingStatusBadge({super.key, required this.status});
 
   @override
   Widget build(BuildContext context) {
@@ -48,19 +48,19 @@ class BillingStatusBadge extends StatelessWidget {
     switch (status.toLowerCase()) {
       case 'paid':
         return {
-          'background': AppColors.statusCompleted.withOpacity(0.1),
+          'background': AppColors.statusCompleted.withValues(alpha: 0.1),
           'text': AppColors.statusCompleted,
         };
       case 'pending':
       case 'partial':
         return {
-          'background': AppColors.statusNoShow.withOpacity(0.1),
+          'background': AppColors.statusNoShow.withValues(alpha: 0.1),
           'text': AppColors.statusNoShow,
         };
       case 'overdue':
       case 'unpaid':
         return {
-          'background': AppColors.statusCancelled.withOpacity(0.1),
+          'background': AppColors.statusCancelled.withValues(alpha: 0.1),
           'text': AppColors.statusCancelled,
         };
       default:

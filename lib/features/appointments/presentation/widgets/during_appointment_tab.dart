@@ -22,11 +22,12 @@ class DuringAppointmentTab extends StatefulWidget {
 class _DuringAppointmentTabState extends State<DuringAppointmentTab> {
   final TextEditingController _complaintsController = TextEditingController();
   final TextEditingController _findingsController = TextEditingController();
-  final TextEditingController _treatmentDoneController = TextEditingController();
+  final TextEditingController _treatmentDoneController =
+      TextEditingController();
   final TextEditingController _notesController = TextEditingController();
-  
+
   List<String> selectedTeeth = [];
-  
+
   @override
   void initState() {
     super.initState();
@@ -35,13 +36,17 @@ class _DuringAppointmentTabState extends State<DuringAppointmentTab> {
     _findingsController.text = widget.appointment.clinicalFindings ?? '';
     _treatmentDoneController.text = widget.appointment.treatmentPerformed ?? '';
     _notesController.text = widget.appointment.notes;
-    
+
     // Load selected teeth
-    if (widget.appointment.teethTreated != null && widget.appointment.teethTreated!.isNotEmpty) {
-      selectedTeeth = widget.appointment.teethTreated!.split(',').map((e) => e.trim()).toList();
+    if (widget.appointment.teethTreated != null &&
+        widget.appointment.teethTreated!.isNotEmpty) {
+      selectedTeeth = widget.appointment.teethTreated!
+          .split(',')
+          .map((e) => e.trim())
+          .toList();
     }
   }
-  
+
   @override
   void dispose() {
     _complaintsController.dispose();
@@ -56,9 +61,9 @@ class _DuringAppointmentTabState extends State<DuringAppointmentTab> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: widget.isAppointmentCompleted
-            ? const Color(0xFF10B981).withOpacity(0.1)
+            ? const Color(0xFF10B981).withValues(alpha: 0.1)
             : widget.isAppointmentStarted
-            ? const Color(0xFF3B82F6).withOpacity(0.1)
+            ? const Color(0xFF3B82F6).withValues(alpha: 0.1)
             : Colors.grey[100],
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
@@ -149,7 +154,8 @@ class _DuringAppointmentTabState extends State<DuringAppointmentTab> {
           borderSide: BorderSide(color: Colors.grey[200]!),
         ),
         filled: true,
-        fillColor: (widget.isAppointmentStarted && !widget.isAppointmentCompleted)
+        fillColor:
+            (widget.isAppointmentStarted && !widget.isAppointmentCompleted)
             ? Colors.white
             : Colors.grey[50],
         contentPadding: const EdgeInsets.symmetric(
@@ -183,7 +189,7 @@ class _DuringAppointmentTabState extends State<DuringAppointmentTab> {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Upper Teeth (1-16)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -207,7 +213,7 @@ class _DuringAppointmentTabState extends State<DuringAppointmentTab> {
             }),
           ),
           const SizedBox(height: 24),
-          
+
           // Lower Teeth (17-32)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -230,13 +236,13 @@ class _DuringAppointmentTabState extends State<DuringAppointmentTab> {
               ),
             ],
           ),
-          
+
           if (selectedTeeth.isNotEmpty) ...[
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF3B82F6).withOpacity(0.1),
+                color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -253,7 +259,7 @@ class _DuringAppointmentTabState extends State<DuringAppointmentTab> {
       ),
     );
   }
-  
+
   Widget _buildTooth(int toothNumber) {
     final isSelected = selectedTeeth.contains(toothNumber.toString());
     return GestureDetector(
@@ -277,9 +283,7 @@ class _DuringAppointmentTabState extends State<DuringAppointmentTab> {
               width: 28,
               height: 40,
               decoration: BoxDecoration(
-                color: isSelected
-                    ? const Color(0xFF3B82F6)
-                    : Colors.white,
+                color: isSelected ? const Color(0xFF3B82F6) : Colors.white,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(8),
                   topRight: Radius.circular(8),

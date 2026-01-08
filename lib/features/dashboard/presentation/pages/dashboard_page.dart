@@ -181,7 +181,7 @@ class _DashboardPageContentState extends State<_DashboardPageContent> {
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
+                              color: Colors.black.withValues(alpha: 0.04),
                               blurRadius: 18,
                               offset: const Offset(0, 8),
                             ),
@@ -376,7 +376,6 @@ class _DashboardPageContentState extends State<_DashboardPageContent> {
       ),
     );
   }
-
 
   Widget _buildTabBody(double screenWidth, double screenHeight) {
     switch (currentTab) {

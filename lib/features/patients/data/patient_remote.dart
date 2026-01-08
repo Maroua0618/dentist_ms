@@ -41,8 +41,9 @@ class PatientRemoteDataSource {
 
   /// Update an existing patient
   Future<Patient> updatePatient(Patient patient) async {
-    if (patient.id == null)
+    if (patient.id == null) {
       throw Exception('Patient ID is required for update');
+    }
 
     try {
       final response = await _client

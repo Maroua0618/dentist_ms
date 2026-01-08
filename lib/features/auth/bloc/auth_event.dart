@@ -39,10 +39,10 @@ class AuthUserChanged extends AuthEvent {
 }
 
 class AuthUpdateProfile extends AuthEvent {
-  final AppUser updatedUser;
+  final AppUser user;
   
-  AuthUpdateProfile(this.updatedUser);
+  AuthUpdateProfile(this.user);
   
   @override
-  List<Object?> get props => [updatedUser];
+  List<Object?> get props => [user];
 }

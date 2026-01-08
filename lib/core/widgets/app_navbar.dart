@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dentist_ms/core/constants/app_colors.dart';
 import 'package:dentist_ms/core/constants/app_routes.dart';
 import 'package:dentist_ms/core/constants/app_text_styles.dart';
@@ -7,6 +8,7 @@ import 'package:dentist_ms/features/auth/bloc/auth_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 
 class AppNavbar extends StatefulWidget {
   final int selectedIndex;
@@ -30,6 +32,33 @@ class AppNavbar extends StatefulWidget {
 
 class _AppNavbarState extends State<AppNavbar> {
   bool _isCollapsed = false;
+  final Map<String, Uint8List> _imageCache = {};
+
+  /// Load profile image from Supabase Storage
+  Future<Uint8List?> _loadProfileImage(String? imageUrl) async {
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return null;
+    }
+
+    // Check cache first
+    if (_imageCache.containsKey(imageUrl)) {
+      return _imageCache[imageUrl];
+    }
+
+    try {
+      // Download image bytes from Supabase Storage
+      final response = await Supabase.instance.client.storage
+          .from('profile-images')
+          .download(imageUrl);
+
+      // Cache the image
+      _imageCache[imageUrl] = response;
+      return response;
+    } catch (e) {
+      print('Error loading profile image in navbar: $e');
+      return null;
+    }
+  }
 
   void _showSignOutDialog() {
     showDialog(
@@ -54,7 +83,7 @@ class _AppNavbarState extends State<AppNavbar> {
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(
               'Annuler',
-              style: TextStyle(color: Colors.white.withOpacity(0.7)),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
             ),
           ),
           ElevatedButton(
@@ -163,25 +192,37 @@ class _AppNavbarState extends State<AppNavbar> {
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: selected
             ? BoxDecoration(
-                color: AppColors.white.withOpacity(0.1),
+                color: AppColors.white.withValues(alpha: 0.1),
                 border: Border.all(color: AppColors.cardBlue),
                 borderRadius: BorderRadius.circular(14),
               )
             : null,
         child: Row(
           children: [
-            // Avatar
-            CircleAvatar(
-              radius: 12,
-              backgroundColor: const Color(0xFF4F7EFF),
-              child: Text(
-                user.firstName[0].toUpperCase(),
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
+            // Avatar with profile image
+            FutureBuilder<Uint8List?>(
+              future: _loadProfileImage(user.profileImageUrl),
+              builder: (context, snapshot) {
+                return CircleAvatar(
+                  radius: 16,
+                  backgroundColor: const Color(0xFF4F7EFF),
+                  backgroundImage: snapshot.hasData && snapshot.data != null
+                      ? MemoryImage(snapshot.data!)
+                      : null,
+                  child: snapshot.hasData && snapshot.data != null
+                      ? null
+                      : Text(
+                          user.firstName.isNotEmpty
+                              ? user.firstName[0].toUpperCase()
+                              : 'U',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                );
+              },
             ),
 
             if (!_isCollapsed) ...[
@@ -202,7 +243,7 @@ class _AppNavbarState extends State<AppNavbar> {
                       user.role.name.toUpperCase(),
                       style: TextStyle(
                         color: selected
-                            ? Colors.white.withOpacity(0.7)
+                            ? Colors.white.withValues(alpha: 0.7)
                             : Colors.grey,
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
@@ -295,11 +336,12 @@ class _AppNavbarState extends State<AppNavbar> {
                           decoration: AppColors.selectedPage.copyWith(
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(4),
                           child: SvgPicture.asset(
-                            "assets/icons/pfp.svg",
-                            width: 25,
-                            height: 25,
+                            "assets/images/dms.svg",
+                            width: 35,
+                            height: 35,
+                            color: Colors.white,
                           ),
                         ),
                         const SizedBox(width: 8),

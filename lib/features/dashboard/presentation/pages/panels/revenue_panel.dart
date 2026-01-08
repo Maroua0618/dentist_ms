@@ -14,7 +14,7 @@ import '../widgets/treatment_row.dart';
 class RevenuePanel extends StatefulWidget {
   final double screenWidth;
   final double screenHeight;
-  
+
   const RevenuePanel({
     super.key,
     required this.screenWidth,
@@ -31,7 +31,9 @@ class _RevenuePanelState extends State<RevenuePanel> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<RevenueBloc>().add(LoadRevenueChart(year: DateTime. now().year));
+        context.read<RevenueBloc>().add(
+          LoadRevenueChart(year: DateTime.now().year),
+        );
       }
     });
   }
@@ -45,7 +47,7 @@ class _RevenuePanelState extends State<RevenuePanel> {
           child: Container(
             decoration: BoxDecoration(
               color: kSurface,
-              borderRadius: BorderRadius. circular(kRadiusCard),
+              borderRadius: BorderRadius.circular(kRadiusCard),
               border: Border.all(color: kBorder),
             ),
             padding: const EdgeInsets.all(20),
@@ -54,8 +56,8 @@ class _RevenuePanelState extends State<RevenuePanel> {
               children: [
                 const Text(
                   'Tendances des revenus et des bénéfices',
-                  style:  TextStyle(
-                    fontSize:  18,
+                  style: TextStyle(
+                    fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: kTextPrimary,
                   ),
@@ -63,7 +65,7 @@ class _RevenuePanelState extends State<RevenuePanel> {
                 const SizedBox(height: 6),
                 const Text(
                   'Analyse mensuelle des revenus et bénéfices',
-                  style: TextStyle(color:  kTextSecondary),
+                  style: TextStyle(color: kTextSecondary),
                 ),
                 const SizedBox(height: 16),
                 Expanded(
@@ -79,11 +81,23 @@ class _RevenuePanelState extends State<RevenuePanel> {
                   children: const [
                     LegendDot(color: Color(0xFF10B981)),
                     SizedBox(width: 6),
-                    Text('Bénéfice', style: TextStyle(color: kTextSecondary, fontWeight: FontWeight.w600)),
+                    Text(
+                      'Bénéfice',
+                      style: TextStyle(
+                        color: kTextSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     SizedBox(width: 18),
                     LegendDot(color: Color(0xFF2563EB)),
                     SizedBox(width: 6),
-                    Text('Chiffre d\'affaires', style: TextStyle(color: kTextSecondary, fontWeight: FontWeight.w600)),
+                    Text(
+                      'Chiffre d\'affaires',
+                      style: TextStyle(
+                        color: kTextSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -105,10 +119,17 @@ class _RevenuePanelState extends State<RevenuePanel> {
               children: [
                 const Text(
                   'Meilleurs traitements par chiffre d\'affaires',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kTextPrimary),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: kTextPrimary,
+                  ),
                 ),
                 const SizedBox(height: 6),
-                const Text('Traitements avec les revenus les plus élevés', style: TextStyle(color: kTextSecondary)),
+                const Text(
+                  'Traitements avec les revenus les plus élevés',
+                  style: TextStyle(color: kTextSecondary),
+                ),
                 const SizedBox(height: 12),
                 Expanded(
                   child: BlocBuilder<RevenueBloc, RevenueState>(
@@ -130,7 +151,12 @@ class _RevenuePanelState extends State<RevenuePanel> {
       return const Center(child: CircularProgressIndicator());
     }
     if (state is RevenueOperationFailure) {
-      return Center(child: Text('Erreur: ${state.message}', style: const TextStyle(color:  Colors.red)));
+      return Center(
+        child: Text(
+          'Erreur: ${state.message}',
+          style: const TextStyle(color: Colors.red),
+        ),
+      );
     }
     if (state is RevenueLoadSuccess) {
       return Container(
@@ -140,10 +166,10 @@ class _RevenuePanelState extends State<RevenuePanel> {
           border: Border.all(color: const Color(0xFFE7E7E7)),
         ),
         padding: const EdgeInsets.fromLTRB(10, 10, 18, 18),
-        child: LineChart(_revenueChartData(state. chartData)),
+        child: LineChart(_revenueChartData(state.chartData)),
       );
     }
-    return const SizedBox. shrink();
+    return const SizedBox.shrink();
   }
 
   Widget _buildTopTreatments(BuildContext context, RevenueState state) {
@@ -151,16 +177,30 @@ class _RevenuePanelState extends State<RevenuePanel> {
       return const Center(child: CircularProgressIndicator());
     }
     if (state is RevenueOperationFailure) {
-      return Center(child: Text('Erreur: ${state.message}', style: const TextStyle(color: Colors.red, fontSize: 12)));
+      return Center(
+        child: Text(
+          'Erreur: ${state.message}',
+          style: const TextStyle(color: Colors.red, fontSize: 12),
+        ),
+      );
     }
     if (state is RevenueLoadSuccess) {
       final topTreatments = state.chartData.topTreatments;
       if (topTreatments.isEmpty) {
-        return const Center(child: Text('Aucune donnée disponible', style: TextStyle(color: kTextSecondary)));
+        return const Center(
+          child: Text(
+            'Aucune donnée disponible',
+            style: TextStyle(color: kTextSecondary),
+          ),
+        );
       }
       return ScrollConfiguration(
         behavior: ScrollConfiguration.of(context).copyWith(
-          dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse, PointerDeviceKind. trackpad},
+          dragDevices: {
+            PointerDeviceKind.touch,
+            PointerDeviceKind.mouse,
+            PointerDeviceKind.trackpad,
+          },
         ),
         child: ListView.builder(
           padding: EdgeInsets.zero,
@@ -181,9 +221,30 @@ class _RevenuePanelState extends State<RevenuePanel> {
   }
 
   LineChartData _revenueChartData(RevenueChartData chartData) {
-    final months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
-    final revenueSpots = chartData.monthlyData.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value.totalRevenue)).toList();
-    final profitSpots = chartData.monthlyData.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value.netProfit)).toList();
+    final months = [
+      'Jan',
+      'Fév',
+      'Mar',
+      'Avr',
+      'Mai',
+      'Jun',
+      'Jul',
+      'Aoû',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Déc',
+    ];
+    final revenueSpots = chartData.monthlyData
+        .asMap()
+        .entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value.totalRevenue))
+        .toList();
+    final profitSpots = chartData.monthlyData
+        .asMap()
+        .entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value.netProfit))
+        .toList();
 
     double minYValue = 0;
     for (var data in chartData.monthlyData) {
@@ -201,30 +262,43 @@ class _RevenuePanelState extends State<RevenuePanel> {
       gridData: FlGridData(
         show: true,
         drawVerticalLine: true,
-        getDrawingHorizontalLine: (_) => const FlLine(color:  Color(0xFFE8EDF4), strokeWidth: 1),
-        getDrawingVerticalLine: (_) => const FlLine(color: Color(0xFFE8EDF4), strokeWidth: 1),
+        getDrawingHorizontalLine: (_) =>
+            const FlLine(color: Color(0xFFE8EDF4), strokeWidth: 1),
+        getDrawingVerticalLine: (_) =>
+            const FlLine(color: Color(0xFFE8EDF4), strokeWidth: 1),
       ),
       titlesData: FlTitlesData(
-        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
             interval: chartData.yAxisInterval,
             reservedSize: 60,
-            getTitlesWidget:  (value, _) => Text(_formatYAxisLabel(value), style: const TextStyle(fontSize: 11, color: kTextSecondary)),
+            getTitlesWidget: (value, _) => Text(
+              _formatYAxisLabel(value),
+              style: const TextStyle(fontSize: 11, color: kTextSecondary),
+            ),
           ),
         ),
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
-            showTitles:  true,
+            showTitles: true,
             interval: 1,
             getTitlesWidget: (value, _) {
               final index = value.toInt();
-              if (index >= 0 && index < months. length) {
-                return Padding(padding: const EdgeInsets.only(top: 6), child: Text(months[index], style: const TextStyle(fontSize: 12, color: kTextSecondary)));
+              if (index >= 0 && index < months.length) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    months[index],
+                    style: const TextStyle(fontSize: 12, color: kTextSecondary),
+                  ),
+                );
               }
-              return const SizedBox. shrink();
+              return const SizedBox.shrink();
             },
           ),
         ),
@@ -246,7 +320,13 @@ class _RevenuePanelState extends State<RevenuePanel> {
             final isRevenue = s.barIndex == 1;
             return LineTooltipItem(
               '${isRevenue ? "Rev" : "Bén"}:  ${_formatYAxisLabel(s.y)}',
-              TextStyle(color: isRevenue ? const Color(0xFF2563EB) : const Color(0xFF10B981), fontWeight: FontWeight.w700, fontSize: 12),
+              TextStyle(
+                color: isRevenue
+                    ? const Color(0xFF2563EB)
+                    : const Color(0xFF10B981),
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
             );
           }).toList(),
         ),
@@ -258,7 +338,12 @@ class _RevenuePanelState extends State<RevenuePanel> {
           preventCurveOverShooting: true,
           color: const Color(0xFF10B981),
           barWidth: 3,
-          belowBarData: BarAreaData(show: true, color: const Color(0xFF10B981).withOpacity(0.15), cutOffY: minYValue, applyCutOffY: true),
+          belowBarData: BarAreaData(
+            show: true,
+            color: const Color(0xFF10B981).withValues(alpha: 0.15),
+            cutOffY: minYValue,
+            applyCutOffY: true,
+          ),
           dotData: const FlDotData(show: false),
           spots: profitSpots,
         ),
@@ -268,7 +353,12 @@ class _RevenuePanelState extends State<RevenuePanel> {
           preventCurveOverShooting: true,
           color: const Color(0xFF2563EB),
           barWidth: 3,
-          belowBarData:  BarAreaData(show: true, color: const Color(0xFF2563EB).withOpacity(0.15), cutOffY: minYValue, applyCutOffY: true),
+          belowBarData: BarAreaData(
+            show: true,
+            color: const Color(0xFF2563EB).withValues(alpha: 0.15),
+            cutOffY: minYValue,
+            applyCutOffY: true,
+          ),
           dotData: const FlDotData(show: false),
           spots: revenueSpots,
         ),

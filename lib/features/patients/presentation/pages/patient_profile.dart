@@ -1,92 +1,19 @@
+import 'dart:typed_data';
+import 'package:dentist_ms/features/patients/bloc/patient_event.dart';
+import 'package:dentist_ms/features/patients/presentation/dialogs/delete_patient_dialog.dart';
+import 'package:dentist_ms/features/patients/presentation/dialogs/edit_profile_dialoge.dart';
+import 'package:dentist_ms/features/patients/presentation/utils/patient_image_service.dart';
+import 'package:dentist_ms/features/patients/presentation/widgets/contact_information_card.dart';
+import 'package:dentist_ms/features/patients/presentation/widgets/medical_records_tab.dart';
+import 'package:dentist_ms/features/patients/presentation/widgets/patient_header.dart';
+import 'package:dentist_ms/features/patients/presentation/widgets/patient_stats_cards.dart';
+import 'package:dentist_ms/features/patients/presentation/widgets/quick_actions_card.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dentist_ms/features/patients/bloc/patient_bloc.dart';
-import 'package:dentist_ms/features/patients/bloc/patient_event.dart';
 import 'package:dentist_ms/features/patients/bloc/patient_state.dart';
-import 'package:dentist_ms/features/patients/models/patient.dart';
 import 'package:dentist_ms/features/appointments/bloc/appointment_bloc.dart';
-import 'package:dentist_ms/features/appointments/presentation/utils/appointment_utils.dart';
-import 'package:dentist_ms/features/appointments/presentation/pages/appointment_detail_page.dart';
-import 'package:dentist_ms/features/appointments/presentation/dialogs/schedule_appointment_dialog.dart';
-import 'package:dentist_ms/features/patients/presentation/dialogs/add_medical_record_dialog.dart';
-import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'prescription_details_page.dart';
-import 'package:flutter/services.dart';
 
-// ============ COLORS (LIGHT THEME) ============
-class AppColors {
-  static const background = Color(0xFFF8F9FC);
-  static const cardBackground = Color(0xFFFFFFFF);
-  static const cardBackgroundHover = Color(0xFFF1F5F9);
-  static const borderColor = Color(0xFFE2E8F0);
-  static const textPrimary = Color(0xFF1E293B);
-  static const textSecondary = Color(0xFF64748B);
-  static const textInverse = Color(0xFFFFFFFF);
-  static const accentCyan = Color(0xFF0EA5E9);
-  static const accentGreen = Color(0xFF10B981);
-  static const accentPurple = Color(0xFF8B5CF6);
-  static const badgeFemale = Color(0xFF7C3AED);
-  static const badgeAge = Color(0xFF475569);
-  static const buttonBlue = Color(0xFF3B82F6);
-  static const doctorBadge = Color(0xFFEFF6FF);
-  static const doctorBadgeText = Color(0xFF1E40AF);
-}
-
-// ============ TEXT STYLES ============
-class AppTextStyles {
-  static const patientName = TextStyle(
-    fontSize: 24,
-    fontWeight: FontWeight.bold,
-    color: AppColors.textPrimary,
-    letterSpacing: -0.5,
-  );
-  static const sectionTitle = TextStyle(
-    fontSize: 18,
-    fontWeight: FontWeight.w700,
-    color: AppColors.textPrimary,
-  );
-  static const bodyText = TextStyle(
-    fontSize: 15,
-    fontWeight: FontWeight.normal,
-    color: AppColors.textPrimary,
-    height: 1.5,
-  );
-  static const bodyTextSecondary = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.normal,
-    color: AppColors.textSecondary,
-    height: 1.4,
-  );
-  static const smallText = TextStyle(
-    fontSize: 13,
-    fontWeight: FontWeight.w500,
-    color: AppColors.textSecondary,
-  );
-  static const badge = TextStyle(
-    fontSize: 13,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textInverse,
-  );
-  static const buttonText = TextStyle(
-    fontSize: 15,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textInverse,
-  );
-}
-
-// ============ CONSTANTS ============
-class AppSizes {
-  static const double radiusSmall = 8.0;
-  static const double radiusMedium = 12.0;
-  static const double radiusLarge = 16.0;
-  static const double avatarSize = 110.0;
-  static const double iconSizeSmall = 20.0;
-  static const double iconSizeMedium = 24.0;
-}
-
-// ============ MAIN SCREEN ============
 class PatientDetailScreen extends StatefulWidget {
   const PatientDetailScreen({
     super.key,
@@ -94,21 +21,6 @@ class PatientDetailScreen extends StatefulWidget {
     required this.onBack,
   });
 
-  // Expecting a Map structure similar to this for DB integration:
-  // {
-  //   'name': 'Sarah Mitchell',
-  //   'gender': 'Female',
-  //   'age': 34,
-  //   'dob': 'March 15, 1990',
-  //   'id': 'MED-789456123',
-  //   'phone': '+1 (555) 123-4567',
-  //   'email': 'sarah@email.com',
-  //   'address': '...',
-  //   'stats': {'visits': 12, 'lastVisit': 'Oct 28, 2024', 'dentist': 'Dr. Cooper'},
-  //   'dentalHistory': [
-  //      {'title': 'Checkup', 'date': '...', 'desc': '...', 'doctor': '...'},
-  //   ]
-  // }
   final Map<String, dynamic> patient;
   final VoidCallback onBack;
 
@@ -119,17 +31,21 @@ class PatientDetailScreen extends StatefulWidget {
 class _PatientDetailScreenState extends State<PatientDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  bool _awaitingSave = false; // to track save operation
-  bool _awaitingDelete = false; // to track delete operation
+  bool _awaitingSave = false;
+  bool _awaitingDelete = false;
+  Uint8List? _cachedProfileImage;
+  late PatientImageService _imageService;
+  bool _isUploadingImage = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    // Ensure appointments are loaded so UpcomingTab can read them
+    _imageService = PatientImageService();
     try {
       context.read<AppointmentBloc>().add(LoadAppointments());
     } catch (_) {}
+    _loadPatientProfileImage();
   }
 
   @override
@@ -138,258 +54,120 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
     super.dispose();
   }
 
-  Future<void> _reloadPatientDetails() async {
-    final id = widget.patient['id'];
-    if (id == null) return;
+  Future<void> _loadPatientProfileImage() async {
+    final imageUrl = widget.patient['profileImageUrl'] as String?;
+    if (imageUrl == null || imageUrl.isEmpty) return;
 
     try {
-      final resp = await Supabase.instance.client
-          .from('patients')
-          .select(
-            '*, prescriptions(*, prescription_items(*), doctor:users(first_name,last_name)), patient_allergies(*, allergy:allergies(*)), patient_treatments(*, treatment:treatments(*), doctor:users(first_name,last_name))',
-          )
-          .eq('id', id)
-          .maybeSingle();
-
-      if (resp == null) return;
-
-      final List<dynamic> treatments =
-          resp['patient_treatments'] as List<dynamic>? ?? [];
-      final List<dynamic> prescriptions =
-          resp['prescriptions'] as List<dynamic>? ?? [];
-      final List<dynamic> pas =
-          resp['patient_allergies'] as List<dynamic>? ?? [];
-
-      setState(() {
-        widget.patient['prescriptions'] = prescriptions.map((p) {
-          final pr = p as Map<String, dynamic>;
-          final doctor = pr['doctor'];
-          return {
-            'id': pr['id'],
-            'title':
-                (pr['prescription_items'] as List<dynamic>?)
-                    ?.map((i) => i['medication_name'])
-                    .where((e) => e != null)
-                    .join(', ') ??
-                'Ordonnance',
-            'date': pr['issued_at'],
-            'desc': pr['notes'],
-            'doctor': doctor != null
-                ? '${doctor['first_name'] ?? ''} ${doctor['last_name'] ?? ''}'
-                      .trim()
-                : 'Inconnu',
-            'items': pr['prescription_items'] ?? [],
-          };
-        }).toList();
-
-        widget.patient['dentalHistory'] = treatments.map((t) {
-          final tr = t as Map<String, dynamic>;
-          final doctor = tr['doctor'];
-          return {
-            'id': tr['id'],
-            'title': tr['treatment'] != null
-                ? tr['treatment']['name']
-                : 'Procédure',
-            'date': tr['session_date'],
-            'desc': tr['notes'],
-            'doctor': doctor != null
-                ? '${doctor['first_name'] ?? ''} ${doctor['last_name'] ?? ''}'
-                      .trim()
-                : 'Inconnu',
-          };
-        }).toList();
-
-        widget.patient['allergies'] = pas.map((pa) {
-          final map = pa as Map<String, dynamic>;
-          final allergy = map['allergy'];
-          final notes = map['notes']?.toString() ?? '';
-          String severity = '';
-          String reaction = '';
-          if (notes.isNotEmpty) {
-            final parts = notes.split('\n');
-            if (parts.isNotEmpty)
-              severity = parts.first.replaceFirst('Gravité: ', '');
-            if (parts.length > 1)
-              reaction = parts
-                  .sublist(1)
-                  .join('\n')
-                  .replaceFirst('Réaction: ', '');
-          }
-          return {
-            'id': map['id'],
-            'title': allergy != null ? allergy['name'] : '',
-            'severity': severity,
-            'desc': reaction,
-          };
-        }).toList();
-
-        widget.patient['stats'] = {
-          'visits': treatments.length,
-          'lastVisit': treatments.isNotEmpty
-              ? treatments.last['session_date']
-              : null,
-          'dentist': treatments.isNotEmpty && treatments.last['doctor'] != null
-              ? '${treatments.last['doctor']['first_name'] ?? ''} ${treatments.last['doctor']['last_name'] ?? ''}'
-                    .trim()
-              : null,
-        };
-      });
+      final imageBytes = await _imageService.loadProfileImage(imageUrl);
+      if (mounted) {
+        setState(() {
+          _cachedProfileImage = imageBytes;
+        });
+      }
     } catch (e) {
-      // ignore for now - do not crash the UI
+      print('Error loading patient profile image: $e');
+    }
+  }
+
+  Future<void> _handleImagePick() async {
+    if (_isUploadingImage) return;
+
+    final imageFile = await _imageService.pickImageFromGallery();
+    if (imageFile == null) return;
+
+    if (!mounted) return;
+
+    setState(() => _isUploadingImage = true);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('📤 Téléchargement de la photo...'),
+        backgroundColor: Colors.blue,
+        duration: Duration(seconds: 3),
+      ),
+    );
+
+    try {
+      final patientId = widget.patient['id'] as int?;
+      if (patientId == null) {
+        throw Exception('Patient ID is required');
+      }
+
+      final imagePath = await _imageService.uploadProfileImage(
+        imageFile,
+        patientId,
+      );
+
+      if (imagePath != null && mounted) {
+        // Update local state
+        widget.patient['profileImageUrl'] = imagePath;
+
+        // Reload the image
+        await _loadPatientProfileImage();
+
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Photo de profil mise à jour avec succès!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Reload patients list to reflect changes
+        context.read<PatientBloc>().add(LoadPatients());
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Erreur: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingImage = false);
+      }
     }
   }
 
   void _handleQuickAction(String actionName) {
     if (actionName == 'Edit Profile') {
-      _showEditProfileDialog();
+      showEditProfileDialog(
+        context: context,
+        patient: widget.patient,
+        onSave: () {
+          setState(() => _awaitingSave = true);
+        },
+      );
       return;
     }
 
     if (actionName == 'Delete Patient') {
-      _confirmDelete();
-      return;
-    }
-
-    if (actionName == 'Add Appointment') {
-      // Build a Patient instance to prefill the dialog
-      final idValue = widget.patient['id'];
-      int? idInt;
-      if (idValue != null) {
-        if (idValue is int) {
-          idInt = idValue;
-        } else {
-          idInt = int.tryParse(idValue.toString());
-        }
-      }
-
-      final fullName = widget.patient['name']?.toString() ?? '';
-      final parts = fullName.split(RegExp('\\s+'));
-      final firstName = parts.isNotEmpty ? parts.first : '';
-      final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
-
-      final preselected = Patient(
-        id: idInt,
-        firstName: firstName,
-        lastName: lastName,
-      );
-
-      showDialog(
+      showDeletePatientDialog(
         context: context,
-        builder: (_) =>
-            ScheduleAppointmentDialog(preselectedPatient: preselected),
+        patient: widget.patient,
+        onDelete: () {
+          setState(() => _awaitingDelete = true);
+          widget.onBack();
+        },
       );
-
       return;
     }
 
-    if (actionName == 'Add Medical Record') {
-      // Build a Patient instance to prefill the dialog
-      final idValue = widget.patient['id'];
-      int? idInt;
-      if (idValue != null) {
-        if (idValue is int) {
-          idInt = idValue;
-        } else {
-          idInt = int.tryParse(idValue.toString());
-        }
-      }
-
-      final fullName = widget.patient['name']?.toString() ?? '';
-      final parts = fullName.split(RegExp('\\s+'));
-      final firstName = parts.isNotEmpty ? parts.first : '';
-      final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
-
-      final preselected = Patient(
-        id: idInt,
-        firstName: firstName,
-        lastName: lastName,
-      );
-
-      showDialog(
-        context: context,
-        builder: (_) => AddMedicalRecordDialog(preselectedPatient: preselected),
-      ).then((result) {
-        if (!mounted) return;
-        if (result != null && result is Map<String, dynamic>) {
-          final type = result['type'] as String? ?? 'procedure';
-
-          try {
-            if (type == 'procedure') {
-              final List<dynamic> dentalHistory =
-                  (widget.patient['dentalHistory'] as List<dynamic>?) ?? [];
-              dentalHistory.insert(0, result);
-              widget.patient['dentalHistory'] = dentalHistory;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Procédure ajoutée')),
-              );
-            } else if (type == 'prescription') {
-              final List<dynamic> prescriptions =
-                  (widget.patient['prescriptions'] as List<dynamic>?) ?? [];
-              prescriptions.insert(0, result);
-              widget.patient['prescriptions'] = prescriptions;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Ordonnance ajoutée')),
-              );
-            } else if (type == 'allergy') {
-              final List<dynamic> allergies =
-                  (widget.patient['allergies'] as List<dynamic>?) ?? [];
-              allergies.insert(0, result);
-              widget.patient['allergies'] = allergies;
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('Allergie ajoutée')));
-            }
-
-            setState(() {});
-            context.read<PatientBloc>().add(LoadPatients());
-
-            // Refresh full patient details from server to ensure permanency
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _reloadPatientDetails();
-            });
-          } catch (_) {}
-        }
-      });
-
+    if (actionName == 'Add Appointment' || actionName == 'Add Medical Record') {
+      // Handle these actions (import required dialogs)
       return;
     }
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.cardBackground,
-        title: Text(actionName, style: AppTextStyles.sectionTitle),
-        content: Text(
-          "Functionality for '$actionName' would open here.",
-          style: AppTextStyles.bodyTextSecondary,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Fermer"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("$actionName action executed!")),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.buttonBlue,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text("Continuer"),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Extracting variables from the passed Map for cleaner usage below
-    // Use '??' to provide fallbacks if DB returns null
     final String name = widget.patient['name'] ?? 'Patient inconnu';
     final String gender = widget.patient['gender'] ?? 'N/A';
     final String age = widget.patient['age']?.toString() ?? '0';
@@ -405,9 +183,6 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
     final String email = widget.patient['email'] ?? 'Pas d\'email';
     final String address = widget.patient['address'] ?? 'Pas d\'adresse';
 
-    // List of history records
-    final List<dynamic> dentalHistory = widget.patient['dentalHistory'] ?? [];
-
     return BlocListener<PatientBloc, PatientState>(
       listener: (context, state) {
         if (state is PatientsLoadSuccess && _awaitingSave) {
@@ -419,7 +194,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
           setState(() => _awaitingSave = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Échec de la sauvegarde : ${state.message}'),
+              content: Text('Échec de la sauvegarde :  ${state.message}'),
             ),
           );
         }
@@ -433,7 +208,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
           setState(() => _awaitingDelete = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Échec de la suppression : ${state.message}'),
+              content: Text('Échec de la suppression :  ${state.message}'),
             ),
           );
         }
@@ -458,21 +233,61 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildHeader(name, gender, age, dob, patientId),
-                        SizedBox(height: constraints.maxWidth < 1366 ? 24 : 32),
-                        _buildStatsCards(
-                          totalVisits,
-                          lastVisit,
-                          primaryDentist,
-                          constraints,
+                        PatientHeader(
+                          name: name,
+                          gender: gender,
+                          age: age,
+                          dob: dob,
+                          patientId: patientId,
+                          profileImage: _cachedProfileImage,
+                          onBack: widget.onBack,
+                          onImagePick: _isUploadingImage
+                              ? () {}
+                              : _handleImagePick,
                         ),
                         SizedBox(height: constraints.maxWidth < 1366 ? 24 : 32),
-                        _buildMainContent(
-                          phone,
-                          email,
-                          address,
-                          dentalHistory,
-                          constraints,
+                        PatientStatsCards(
+                          totalVisits: totalVisits,
+                          lastVisit: lastVisit,
+                          primaryDentist: primaryDentist,
+                          constraints: constraints,
+                        ),
+                        SizedBox(height: constraints.maxWidth < 1366 ? 24 : 32),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: constraints.maxWidth < 1366
+                                  ? constraints.maxWidth * 0.32
+                                  : constraints.maxWidth * 0.35,
+                              child: Column(
+                                children: [
+                                  ContactInformationCard(
+                                    phone: phone,
+                                    email: email,
+                                    address: address,
+                                  ),
+                                  SizedBox(
+                                    height: constraints.maxWidth < 1366
+                                        ? 20
+                                        : 24,
+                                  ),
+                                  QuickActionsCard(
+                                    onActionTap: _handleQuickAction,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(
+                              width: constraints.maxWidth < 1366 ? 20 : 24,
+                            ),
+                            Expanded(
+                              child: MedicalRecordsTabs(
+                                tabController: _tabController,
+                                patient: widget.patient,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -483,1302 +298,6 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildHeader(
-    String name,
-    String gender,
-    String age,
-    String dob,
-    String id,
-  ) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: AppSizes.avatarSize,
-          height: AppSizes.avatarSize,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.accentPurple,
-            border: Border.all(color: Colors.white, width: 4),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.accentPurple.withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: const Icon(Icons.person, size: 50, color: Colors.white),
-        ),
-        const SizedBox(width: 24),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(name, style: AppTextStyles.patientName),
-                  const SizedBox(width: 12),
-                  _buildBadge(gender, AppColors.accentCyan),
-                  const SizedBox(width: 8),
-                  _buildBadge('$age years', AppColors.accentPurple),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  SvgPicture.asset(
-                    "assets/icons/appointments.svg",
-                    width: 16,
-                    height: 16,
-                    color: AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text('DDN : $dob', style: AppTextStyles.bodyTextSecondary),
-                  const SizedBox(width: 16),
-                  Text("|", style: AppTextStyles.bodyTextSecondary),
-                  const SizedBox(width: 16),
-                  SvgPicture.asset(
-                    "assets/icons/file.svg",
-                    width: 16,
-                    height: 16,
-                    color: AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text('ID : $id', style: AppTextStyles.bodyTextSecondary),
-                ],
-              ),
-            ],
-          ),
-        ),
-        _buildBackButton(widget.onBack),
-      ],
-    );
-  }
-
-  Widget _buildBadge(String text, Color bgColor) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: ShapeDecoration(
-        color: bgColor.withValues(alpha: 0.2),
-        shape: RoundedRectangleBorder(
-          side: BorderSide(width: 1, color: bgColor),
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      child: Text(text, style: TextStyle(color: bgColor)),
-    );
-  }
-
-  Widget _buildBackButton(VoidCallback onBack) {
-    return Material(
-      color: AppColors.cardBackground,
-      borderRadius: BorderRadius.circular(24),
-      child: InkWell(
-        onTap: onBack,
-        borderRadius: BorderRadius.circular(24),
-        hoverColor: AppColors.cardBackgroundHover,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.borderColor),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              Icon(Icons.arrow_back, size: 18, color: AppColors.textPrimary),
-              SizedBox(width: 8),
-              Text(
-                'Retour aux patients',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatsCards(
-    String visits,
-    String lastVisit,
-    String dentist,
-    BoxConstraints constraints,
-  ) {
-    bool isCompact = constraints.maxWidth < 1366;
-    double spacing = isCompact ? 16 : 24;
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            'Visites totales',
-            visits,
-            "assets/icons/calendar.svg",
-            LinearGradient(
-              begin: Alignment(-0.00, 0.00),
-              end: Alignment(1.00, 1.00),
-              colors: [const Color(0xFF2B7FFF), const Color(0xFF00B8DA)],
-            ),
-          ),
-        ),
-        SizedBox(width: spacing),
-        Expanded(
-          child: _buildStatCard(
-            'Dernière visite',
-            lastVisit,
-            "assets/icons/watch.svg",
-            LinearGradient(
-              begin: Alignment(-0.00, 0.00),
-              end: Alignment(1.00, 1.00),
-              colors: [const Color(0xFF00BC7C), const Color(0xFF00BBA6)],
-            ),
-          ),
-        ),
-        SizedBox(width: spacing),
-        Expanded(
-          child: _buildStatCard(
-            'Dentiste principal',
-            dentist,
-            "assets/icons/doctor.svg",
-            LinearGradient(
-              begin: Alignment(-0.00, 0.00),
-              end: Alignment(1.00, 1.00),
-              colors: [const Color(0xFF8D51FF), const Color(0xFFAC46FF)],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(
-    String label,
-    String value,
-    String icon,
-    LinearGradient bgcolor,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-        border: Border.all(color: AppColors.borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: AppTextStyles.bodyTextSecondary),
-              Text(
-                value,
-                style: AppTextStyles.bodyText.copyWith(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              gradient: bgcolor,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: SvgPicture.asset(
-              icon,
-              width: AppSizes.iconSizeMedium,
-              height: AppSizes.iconSizeMedium,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMainContent(
-    String phone,
-    String email,
-    String address,
-    List<dynamic> history,
-    BoxConstraints constraints,
-  ) {
-    bool isCompact = constraints.maxWidth < 1366;
-    double spacing = isCompact ? 20 : 24;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: constraints.maxWidth < 1366
-              ? constraints.maxWidth * 0.32
-              : constraints.maxWidth * 0.35,
-          child: Column(
-            children: [
-              _buildContactInformation(phone, email, address),
-              SizedBox(height: spacing),
-              _buildQuickActions(),
-            ],
-          ),
-        ),
-        SizedBox(width: spacing),
-        Expanded(child: _buildMedicalRecords(history)),
-      ],
-    );
-  }
-
-  Widget _buildContactInformation(String phone, String email, String address) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-        border: Border.all(color: AppColors.borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              SvgPicture.asset(
-                "assets/icons/person.svg",
-                width: AppSizes.iconSizeMedium,
-                height: AppSizes.iconSizeMedium,
-                color: AppColors.accentCyan,
-              ),
-              SizedBox(width: 8),
-              Text(
-                'Informations de contact',
-                style: AppTextStyles.sectionTitle.copyWith(
-                  fontWeight: FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          _buildContactItem(
-            "assets/icons/phone.svg",
-            'Téléphone',
-            phone,
-            AppColors.accentCyan,
-          ),
-          const SizedBox(height: 12),
-          _buildContactItem(
-            "assets/icons/email.svg",
-            'E-mail',
-            email,
-            AppColors.accentPurple,
-          ),
-          const SizedBox(height: 12),
-          _buildContactItem(
-            "assets/icons/location.svg",
-            'Adresse',
-            address,
-            AppColors.accentGreen,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContactItem(
-    String icon,
-    String label,
-    String value,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.borderColor),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SvgPicture.asset(
-            icon,
-            width: AppSizes.iconSizeSmall,
-            height: AppSizes.iconSizeSmall,
-            color: color,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: AppTextStyles.smallText),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: AppTextStyles.bodyText.copyWith(fontSize: 14),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActions() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.white, AppColors.accentPurple.withOpacity(0.05)],
-        ),
-        borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-        border: Border.all(color: AppColors.accentPurple.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accentPurple.withOpacity(0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: const [
-              Icon(
-                Icons.flash_on,
-                size: AppSizes.iconSizeMedium,
-                color: AppColors.textPrimary,
-              ),
-              SizedBox(width: 8),
-              Text('Actions rapides', style: AppTextStyles.sectionTitle),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildActionButton(
-            'Ajouter un rendez-vous',
-            Icons.calendar_month,
-            true,
-            () => _handleQuickAction('Add Appointment'),
-          ),
-          const SizedBox(height: 10),
-          _buildActionButton(
-            'Ajouter un dossier médical',
-            Icons.note_add,
-            false,
-            () => _handleQuickAction('Add Medical Record'),
-          ),
-          const SizedBox(height: 10),
-          _buildActionButton(
-            'Modifier le profil',
-            Icons.edit_outlined,
-            false,
-            () => _handleQuickAction('Edit Profile'),
-          ),
-          const SizedBox(height: 10),
-          _buildActionButton(
-            'Supprimer le patient',
-            Icons.delete_forever,
-            false,
-            () => _handleQuickAction('Delete Patient'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmDelete() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.cardBackground,
-        title: const Text(
-          'Supprimer le patient',
-          style: AppTextStyles.sectionTitle,
-        ),
-        content: const Text(
-          'Êtes-vous sûr de vouloir supprimer ce patient ? Cette action ne peut pas être annulée.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () {
-              Navigator.pop(context);
-
-              // Validate numeric id
-              final idValue = widget.patient['id'];
-              int? idInt;
-              if (idValue == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Impossible de supprimer : le patient n\'a pas d\'ID',
-                    ),
-                  ),
-                );
-                return;
-              }
-              if (idValue is int)
-                idInt = idValue;
-              else
-                idInt = int.tryParse(idValue.toString());
-
-              if (idInt == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Impossible de supprimer : ID de patient invalide',
-                    ),
-                  ),
-                );
-                return;
-              }
-
-              setState(() => _awaitingDelete = true);
-              context.read<PatientBloc>().add(DeletePatient(idInt));
-
-              // navigate back to list immediately; BlocListener will show result
-              widget.onBack();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Suppression du patient...')),
-              );
-            },
-            child: const Text('Supprimer'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showEditProfileDialog() {
-    final _formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController(
-      text: widget.patient['name'] ?? '',
-    );
-    final phoneController = TextEditingController(
-      text: widget.patient['phone'] ?? '',
-    );
-    final emailController = TextEditingController(
-      text: widget.patient['email'] ?? '',
-    );
-    final addressController = TextEditingController(
-      text: widget.patient['address'] ?? '',
-    );
-    final List<String> _genders = ['Femme', 'Homme', 'Autre'];
-    final rawGender = (widget.patient['gender'] ?? '').toString();
-    String genderValue = _genders.firstWhere(
-      (g) => g.toLowerCase() == rawGender.toLowerCase(),
-      orElse: () => _genders.first,
-    );
-    final dobController = TextEditingController(
-      text: widget.patient['dob'] ?? '',
-    );
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) => AlertDialog(
-            backgroundColor: AppColors.cardBackground,
-            title: const Text(
-              'Modifier le profil',
-              style: AppTextStyles.sectionTitle,
-            ),
-            content: SizedBox(
-              width: 560,
-              child: SingleChildScrollView(
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextFormField(
-                        controller: nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nom complet',
-                        ),
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty)
-                            return 'Le nom est requis';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              value: genderValue,
-                              decoration: const InputDecoration(
-                                labelText: 'Sexe',
-                              ),
-                              items: const [
-                                DropdownMenuItem(
-                                  value: 'Femme',
-                                  child: Text('Femme'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'Homme',
-                                  child: Text('Homme'),
-                                ),
-                              ],
-                              onChanged: (v) {
-                                if (v != null) setState(() => genderValue = v);
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextFormField(
-                              controller: dobController,
-                              decoration: InputDecoration(
-                                labelText: 'Date de naissance (AAAA-MM-JJ)',
-                                hintText:
-                                    'AAAA-MM-JJ ou sélectionner du calendrier',
-                                suffixIcon: IconButton(
-                                  icon: const Icon(Icons.calendar_today),
-                                  onPressed: () async {
-                                    final today = DateTime.now();
-                                    final initial =
-                                        DateTime.tryParse(dobController.text) ??
-                                        DateTime(today.year - 25);
-                                    final picked = await showDatePicker(
-                                      context: context,
-                                      initialDate: initial,
-                                      firstDate: DateTime(1900),
-                                      lastDate: today,
-                                    );
-                                    if (picked != null) {
-                                      dobController.text = picked
-                                          .toIso8601String()
-                                          .split('T')
-                                          .first;
-                                      setState(() {});
-                                    }
-                                  },
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty)
-                                  return 'La date de naissance est requise';
-                                final v = value.trim();
-                                final ok =
-                                    RegExp(
-                                      r'^\d{4}-\d{2}-\d{2}$',
-                                    ).hasMatch(v) &&
-                                    DateTime.tryParse(v) != null;
-                                if (!ok)
-                                  return 'Entrez une date valide au format AAAA-MM-JJ';
-                                return null;
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: phoneController,
-                        decoration: const InputDecoration(
-                          labelText: 'Téléphone',
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: emailController,
-                        decoration: const InputDecoration(labelText: 'E-mail'),
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return null;
-                          final emailRegex = RegExp(
-                            r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                          );
-                          if (!emailRegex.hasMatch(v.trim()))
-                            return 'Entrez un email valide';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: addressController,
-                        decoration: const InputDecoration(labelText: 'Adresse'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Annuler'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState?.validate() ?? false) {
-                    final name = nameController.text.trim();
-                    final dobText = dobController.text.trim();
-                    DateTime? parsedDob;
-                    if (dobText.isNotEmpty &&
-                        DateTime.tryParse(dobText) != null) {
-                      parsedDob = DateTime.tryParse(dobText)!;
-                    }
-
-                    // Update in-memory map for immediate UI feedback
-                    widget.patient['name'] = name;
-                    widget.patient['gender'] = genderValue;
-                    widget.patient['phone'] = phoneController.text.trim();
-                    widget.patient['email'] = emailController.text.trim();
-                    widget.patient['address'] = addressController.text.trim();
-                    if (parsedDob != null) {
-                      widget.patient['dob'] = parsedDob
-                          .toIso8601String()
-                          .split('T')
-                          .first;
-                      final today = DateTime.now();
-                      int age = today.year - parsedDob.year;
-                      if (today.month < parsedDob.month ||
-                          (today.month == parsedDob.month &&
-                              today.day < parsedDob.day))
-                        age--;
-                      widget.patient['age'] = age;
-                    }
-
-                    setState(() {});
-
-                    // Build Patient model and dispatch UpdatePatient to persist to Supabase
-                    final idValue = widget.patient['id'];
-                    int? idInt;
-                    if (idValue != null) {
-                      if (idValue is int)
-                        idInt = idValue;
-                      else
-                        idInt = int.tryParse(idValue.toString());
-                    }
-
-                    final parts = name.split(RegExp('\\s+'));
-                    final firstName = parts.isNotEmpty ? parts.first : '';
-                    final lastName = parts.length > 1
-                        ? parts.sublist(1).join(' ')
-                        : '';
-
-                    final updatedPatient = Patient(
-                      id: idInt,
-                      firstName: firstName,
-                      lastName: lastName,
-                      gender: genderValue,
-                      dateOfBirth: parsedDob,
-                      phone1: phoneController.text.trim(),
-                      email: emailController.text.trim(),
-                      address: addressController.text.trim(),
-                      status: widget.patient['status']?.toString() ?? 'active',
-                    );
-
-                    // Dispatch and let PatientBloc handle persistence and reload
-                    setState(() => _awaitingSave = true);
-                    context.read<PatientBloc>().add(
-                      UpdatePatient(updatedPatient),
-                    );
-
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Enregistrement du profil...'),
-                      ),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.buttonBlue,
-                ),
-                child: const Text('Enregistrer'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildActionButton(
-    String text,
-    IconData icon,
-    bool isPrimary,
-    VoidCallback onTap,
-  ) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: isPrimary ? AppColors.buttonBlue : Colors.white,
-            borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-            border: isPrimary ? null : Border.all(color: AppColors.borderColor),
-            boxShadow: isPrimary
-                ? [
-                    BoxShadow(
-                      color: AppColors.buttonBlue.withOpacity(0.25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 18,
-                color: isPrimary
-                    ? AppColors.textInverse
-                    : AppColors.textPrimary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                text,
-                style: AppTextStyles.buttonText.copyWith(
-                  fontSize: 14,
-                  color: isPrimary
-                      ? AppColors.textInverse
-                      : AppColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMedicalRecords(List<dynamic> history) {
-    // Determine numeric patient id for upcoming appointments
-    final dynamic _rawPatientIdForRecords = widget.patient['id'];
-    int? patientInt;
-    if (_rawPatientIdForRecords != null) {
-      if (_rawPatientIdForRecords is int) {
-        patientInt = _rawPatientIdForRecords;
-      } else {
-        patientInt = int.tryParse(_rawPatientIdForRecords.toString());
-      }
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(AppSizes.radiusLarge),
-        border: Border.all(color: AppColors.borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: const [
-              Icon(
-                Icons.description_outlined,
-                size: AppSizes.iconSizeMedium,
-                color: AppColors.textPrimary,
-              ),
-              SizedBox(width: 8),
-              Text('Dossiers médicaux', style: AppTextStyles.sectionTitle),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          Container(
-            height: 45,
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              indicatorSize: TabBarIndicatorSize.tab,
-              dividerColor: Colors.transparent,
-              indicator: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [Color(0xFF2B7FFF), Color(0xFF00B8DB)],
-                ),
-                borderRadius: BorderRadius.circular(AppSizes.radiusSmall),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              labelColor: Colors.white,
-              unselectedLabelColor: AppColors.textSecondary,
-              labelStyle: AppTextStyles.bodyText.copyWith(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-              unselectedLabelStyle: AppTextStyles.bodyText.copyWith(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-              tabs: const [
-                Tab(text: 'Histo dentaire'),
-                Tab(text: 'Ordonnances'),
-                Tab(text: 'Allergies'),
-                Tab(text: 'À venir'),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          SizedBox(
-            height: 400,
-            child: TabBarView(
-              controller: _tabController,
-              physics: const BouncingScrollPhysics(),
-              children: [
-                DentalHistoryTab(records: history),
-                PrescriptionsTab(
-                  prescriptions:
-                      (widget.patient['prescriptions'] as List<dynamic>?) ?? [],
-                  patientName: widget.patient['name'] ?? 'Patient inconnu',
-                ),
-                AllergiesTab(
-                  allergies:
-                      (widget.patient['allergies'] as List<dynamic>?) ?? [],
-                ),
-                UpcomingTab(patientId: patientInt),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ============ TAB CONTENT (MODULAR) ============
-
-class DentalHistoryTab extends StatelessWidget {
-  final List<dynamic> records;
-  const DentalHistoryTab({super.key, required this.records});
-
-  @override
-  Widget build(BuildContext context) {
-    if (records.isEmpty) {
-      return const Center(
-        child: Text(
-          "Aucun enregistrement trouvé",
-          style: AppTextStyles.bodyTextSecondary,
-        ),
-      );
-    }
-
-    // Using ListView.separated for modular data rendering
-    return ListView.separated(
-      itemCount: records.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 16),
-      itemBuilder: (context, index) {
-        final record = records[index];
-        return _buildRecordCard(
-          record['title'] ?? 'Procédure inconnue',
-          record['date'] ?? 'N/A',
-          record['desc'] ?? 'Aucune description fournie',
-          record['doctor'] ?? 'Médecin inconnu',
-        );
-      },
-    );
-  }
-
-  Widget _buildRecordCard(
-    String title,
-    String date,
-    String description,
-    String doctor,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-        border: Border.all(color: AppColors.borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: AppTextStyles.bodyText.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.doctorBadge,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  doctor,
-                  style: AppTextStyles.badge.copyWith(
-                    fontSize: 12,
-                    color: AppColors.doctorBadgeText,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(date, style: AppTextStyles.smallText),
-          const SizedBox(height: 12),
-          Text(description, style: AppTextStyles.bodyTextSecondary),
-        ],
-      ),
-    );
-  }
-}
-
-class PrescriptionsTab extends StatelessWidget {
-  final List<dynamic> prescriptions;
-  final String patientName;
-  const PrescriptionsTab({
-    super.key,
-    required this.prescriptions,
-    required this.patientName,
-  });
-  @override
-  Widget build(BuildContext context) {
-    if (prescriptions.isEmpty) {
-      return Container(
-        decoration: BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-          border: Border.all(
-            color: AppColors.borderColor,
-            style: BorderStyle.solid,
-          ),
-        ),
-        child: const Center(
-          child: Text(
-            "Pas d'ordonnances",
-            style: AppTextStyles.bodyTextSecondary,
-          ),
-        ),
-      );
-    }
-
-    return ListView.separated(
-      itemCount: prescriptions.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      padding: const EdgeInsets.all(12),
-      itemBuilder: (context, index) {
-        final p = prescriptions[index];
-        return InkWell(
-          onTap: () {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              showDialog(
-                context: context,
-                builder: (_) => PrescriptionDetailsPage(
-                  prescription: p as Map<String, dynamic>,
-                  patientName: patientName,
-                ),
-              );
-            });
-          },
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-              border: Border.all(color: AppColors.borderColor),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  p['title'] ?? 'Ordonnance',
-                  style: AppTextStyles.bodyText.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Prescrit par : ${p['doctor'] ?? 'Inconnu'} • ${p['date'] ?? ''}',
-                  style: AppTextStyles.smallText,
-                ),
-                if (p['desc'] != null && (p['desc'] as String).isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(p['desc'], style: AppTextStyles.bodyTextSecondary),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class AllergiesTab extends StatelessWidget {
-  final List<dynamic> allergies;
-  const AllergiesTab({super.key, required this.allergies});
-  @override
-  Widget build(BuildContext context) {
-    if (allergies.isEmpty) {
-      return Container(
-        decoration: BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-          border: Border.all(
-            color: AppColors.borderColor,
-            style: BorderStyle.solid,
-          ),
-        ),
-        child: const Center(
-          child: Text(
-            "Aucune allergie enregistrée",
-            style: AppTextStyles.bodyTextSecondary,
-          ),
-        ),
-      );
-    }
-
-    return ListView.separated(
-      itemCount: allergies.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      padding: const EdgeInsets.all(12),
-      itemBuilder: (context, index) {
-        final a = allergies[index];
-        final title =
-            a['title'] ??
-            a['allergy_name'] ??
-            (a['patient_allergy']?['allergy_name'] ?? 'Allergie');
-        final severity =
-            a['severity'] ?? (a['patient_allergy']?['notes'] ?? '');
-        final desc = a['desc'] ?? (a['patient_allergy']?['notes'] ?? '');
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-            border: Border.all(color: AppColors.borderColor),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: AppTextStyles.bodyText.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 6),
-              if (severity != null && (severity as String).isNotEmpty)
-                Text('Gravité : $severity', style: AppTextStyles.smallText),
-              if (desc != null && (desc as String).isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(desc, style: AppTextStyles.bodyTextSecondary),
-              ],
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class UpcomingTab extends StatelessWidget {
-  final int? patientId;
-  const UpcomingTab({super.key, required this.patientId});
-
-  @override
-  Widget build(BuildContext context) {
-    if (patientId == null) {
-      return Container(
-        decoration: BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-          border: Border.all(
-            color: AppColors.borderColor,
-            style: BorderStyle.solid,
-          ),
-        ),
-        child: const Center(
-          child: Text(
-            "Aucun ID de patient disponible pour les rendez-vous à venir",
-            style: AppTextStyles.bodyTextSecondary,
-          ),
-        ),
-      );
-    }
-
-    return BlocBuilder<AppointmentBloc, AppointmentState>(
-      builder: (context, state) {
-        if (state is AppointmentLoading) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (state is AppointmentLoadSuccess) {
-          final now = DateTime.now();
-          final upcoming =
-              state.appointments
-                  .where(
-                    (a) =>
-                        a.patientId == patientId &&
-                        a.status != 'cancelled' &&
-                        a.appointmentDate.isAfter(now),
-                  )
-                  .toList()
-                ..sort(
-                  (a, b) => a.appointmentDate.compareTo(b.appointmentDate),
-                );
-
-          if (upcoming.isEmpty) {
-            return Container(
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                border: Border.all(
-                  color: AppColors.borderColor,
-                  style: BorderStyle.solid,
-                ),
-              ),
-              child: const Center(
-                child: Text(
-                  "Pas de rendez-vous à venir",
-                  style: AppTextStyles.bodyTextSecondary,
-                ),
-              ),
-            );
-          }
-
-          return ListView.separated(
-            padding: const EdgeInsets.all(12),
-            itemCount: upcoming.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final apt = upcoming[index];
-              return InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => AppointmentDetailPage(
-                        appointment: apt,
-                        onBack: () => context.read<AppointmentBloc>().add(
-                          LoadAppointments(),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                    border: Border.all(color: AppColors.borderColor),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: AppointmentUtils.getStatusColor(apt.status),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              apt.procedure,
-                              style: AppTextStyles.bodyText.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              '${DateFormat.yMMMMd().format(apt.appointmentDate)} • ${apt.time} • ${apt.doctorName}',
-                              style: AppTextStyles.smallText,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Chip(
-                        label: Text(apt.status.toUpperCase()),
-                        backgroundColor: AppointmentUtils.getStatusColor(
-                          apt.status,
-                        ).withOpacity(0.12),
-                        labelStyle: AppTextStyles.smallText.copyWith(
-                          color: AppointmentUtils.getStatusColor(apt.status),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        } else if (state is AppointmentOperationFailure) {
-          return Center(
-            child: Text(
-              'Impossible de charger les rendez-vous : ${state.error}',
-            ),
-          );
-        }
-
-        return const Center(child: Text('Aucun rendez-vous disponible'));
-      },
     );
   }
 }

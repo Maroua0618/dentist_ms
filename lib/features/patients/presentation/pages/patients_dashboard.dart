@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:dentist_ms/core/constants/app_colors.dart';
 import 'package:dentist_ms/features/patients/models/patient_filter.dart';
 import 'package:dentist_ms/features/patients/presentation/utils/patient_export.dart';
@@ -13,6 +14,7 @@ import 'package:dentist_ms/features/patients/bloc/patient_event.dart';
 import 'package:dentist_ms/features/patients/bloc/patient_state.dart';
 import 'package:dentist_ms/features/patients/models/patient.dart';
 import 'package:dentist_ms/features/patients/presentation/utils/patient_search.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PatientsDashboard extends StatefulWidget {
   const PatientsDashboard({super.key, required this.onPatientSelected});
@@ -48,6 +50,9 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
 
   PatientFilter _currentFilter = const PatientFilter();
 
+  // Cache for patient profile images
+  final Map<String, Uint8List> _imageCache = {};
+
   @override
   void initState() {
     super.initState();
@@ -56,6 +61,27 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<PatientBloc>().add(LoadPatients());
     });
+  }
+
+  Future<Uint8List?> _loadPatientImage(String? imagePath) async {
+    if (imagePath == null || imagePath.isEmpty) return null;
+
+    // Check cache first
+    if (_imageCache.containsKey(imagePath)) {
+      return _imageCache[imagePath];
+    }
+
+    try {
+      final response = await Supabase.instance.client.storage
+          .from('patients-photos')
+          .download(imagePath);
+
+      _imageCache[imagePath] = response;
+      return response;
+    } catch (e) {
+      print('Error loading patient image: $e');
+      return null;
+    }
   }
 
   void _showFilterDialog() async {
@@ -485,7 +511,7 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
+                        color: Colors.grey.withValues(alpha: 0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -520,7 +546,7 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                                 child: Text(
                                   _searchQuery.isEmpty
                                       ? 'Aucun patient disponible'
-                                      : 'Aucun patient ne correspond à "${_searchQuery}"',
+                                      : 'Aucun patient ne correspond à "$_searchQuery"',
                                   style: TextStyle(color: Colors.grey[600]),
                                 ),
                               ),
@@ -704,33 +730,50 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
           'upcoming': upcoming,
           'status': status,
           'balance': balanceVal,
+          'profileImageUrl': patient.profileImageUrl, // ADD THIS
         });
       },
       cells: [
         DataCell(
           Row(
             children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment(-0.00, -0.00),
-                    end: Alignment(1.00, 1.00),
-                    colors: [Color(0xFF50A2FF), Color(0xFFC17AFF)],
-                  ),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Center(
-                  child: Text(
-                    getAvatarText(displayName),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+              // Updated avatar with image support
+              FutureBuilder<Uint8List?>(
+                future: _loadPatientImage(patient.profileImageUrl),
+                builder: (context, snapshot) {
+                  return Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      gradient: snapshot.hasData && snapshot.data != null
+                          ? null
+                          : const LinearGradient(
+                              begin: Alignment(-0.00, -0.00),
+                              end: Alignment(1.00, 1.00),
+                              colors: [Color(0xFF50A2FF), Color(0xFFC17AFF)],
+                            ),
+                      borderRadius: BorderRadius.circular(30),
+                      image: snapshot.hasData && snapshot.data != null
+                          ? DecorationImage(
+                              image: MemoryImage(snapshot.data!),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
                     ),
-                  ),
-                ),
+                    child: snapshot.hasData && snapshot.data != null
+                        ? null
+                        : Center(
+                            child: Text(
+                              getAvatarText(displayName),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                  );
+                },
               ),
               const SizedBox(width: 12),
               Column(
@@ -847,7 +890,7 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
     return Expanded(
       child: Card(
         elevation: 3.5,
-        shadowColor: Colors.grey.withOpacity(0.2),
+        shadowColor: Colors.grey.withValues(alpha: 0.2),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -881,7 +924,7 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: SvgPicture.asset(
@@ -968,10 +1011,12 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                         labelText: 'Nom complet',
                       ),
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty)
+                        if (value == null || value.trim().isEmpty) {
                           return 'Le nom est obligatoire';
-                        if (value.trim().length < 2)
+                        }
+                        if (value.trim().length < 2) {
                           return 'Entrez un nom valide';
+                        }
                         return null;
                       },
                     ),
@@ -980,8 +1025,9 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                       controller: _addressController,
                       decoration: const InputDecoration(labelText: 'Adresse'),
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty)
+                        if (value == null || value.trim().isEmpty) {
                           return 'L\'adresse est obligatoire';
+                        }
                         return null;
                       },
                     ),
@@ -990,13 +1036,15 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                       controller: _emailController,
                       decoration: const InputDecoration(labelText: 'Email'),
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty)
+                        if (value == null || value.trim().isEmpty) {
                           return 'L\'email est obligatoire';
+                        }
                         final emailRegex = RegExp(
                           r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
                         );
-                        if (!emailRegex.hasMatch(value.trim()))
+                        if (!emailRegex.hasMatch(value.trim())) {
                           return 'Entrez un email valide';
+                        }
                         return null;
                       },
                     ),
@@ -1005,8 +1053,9 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                       controller: _contactController,
                       decoration: const InputDecoration(labelText: 'Contact'),
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty)
+                        if (value == null || value.trim().isEmpty) {
                           return 'Le contact est obligatoire';
+                        }
                         return null;
                       },
                     ),
@@ -1020,8 +1069,9 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                               labelText: 'Fournisseur d\'assurance',
                             ),
                             validator: (value) {
-                              if (value == null || value.trim().isEmpty)
+                              if (value == null || value.trim().isEmpty) {
                                 return 'Le fournisseur d\'assurance est obligatoire';
+                              }
                               return null;
                             },
                           ),
@@ -1059,14 +1109,16 @@ class _PatientsDashboardState extends State<PatientsDashboard> {
                               ),
                             ),
                             validator: (value) {
-                              if (value == null || value.trim().isEmpty)
+                              if (value == null || value.trim().isEmpty) {
                                 return 'La date de naissance est obligatoire';
+                              }
                               final v = value.trim();
                               final ok =
                                   RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(v) &&
                                   DateTime.tryParse(v) != null;
-                              if (!ok)
+                              if (!ok) {
                                 return 'Entrez une date valide au format AAAA-MM-JJ';
+                              }
                               // Note: simple check - YYYY-MM-DD
                               return null;
                             },
