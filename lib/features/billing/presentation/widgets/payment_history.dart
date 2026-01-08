@@ -23,13 +23,13 @@ class BillingPaymentHistoryControls extends StatelessWidget {
   final List<String> patients;
 
   const BillingPaymentHistoryControls({
-    Key? key,
+    super.key,
     required this.responsive,
     required this.onAddPayment,
     this.selectedPatient = 'Tous les patients',
     required this.onPatientChanged,
     this.patients = const [],
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -82,10 +82,10 @@ class BillingPaymentHistoryTable extends StatelessWidget {
   final BillingResponsiveHelper responsive;
 
   const BillingPaymentHistoryTable({
-    Key? key,
+    super.key,
     required this.payments,
     required this.responsive,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +144,7 @@ class BillingPaymentHistoryTable extends StatelessWidget {
             width: 100,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
+              color: Colors.green.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(

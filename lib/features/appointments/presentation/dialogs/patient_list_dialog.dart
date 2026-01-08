@@ -95,19 +95,33 @@ class PatientListDialog extends StatelessWidget {
                         children: [
                           Icon(Icons.inbox, size: 48, color: Colors.grey[300]),
                           const SizedBox(height: 12),
-                          Text('Aucun rendez-vous trouvé', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                          Text(
+                            'Aucun rendez-vous trouvé',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
                         ],
                       ),
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.all(16),
                       itemCount: appointmentsToShow.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                      separatorBuilder: (_, _) =>
+                          const Divider(height: 1, color: Color(0xFFE5E7EB)),
                       itemBuilder: (context, index) {
                         final appointment = appointmentsToShow[index];
-                        final treatmentColor = AppointmentUtils.getTreatmentColor(appointment.procedure);
-                        final statusColor = AppointmentUtils.getStatusColor(appointment.status);
-                        final indicatorColor = filterType == 'all' ? statusColor : treatmentColor;
+                        final treatmentColor =
+                            AppointmentUtils.getTreatmentColor(
+                              appointment.procedure,
+                            );
+                        final statusColor = AppointmentUtils.getStatusColor(
+                          appointment.status,
+                        );
+                        final indicatorColor = filterType == 'all'
+                            ? statusColor
+                            : treatmentColor;
 
                         return InkWell(
                           onTap: () {
@@ -120,30 +134,57 @@ class PatientListDialog extends StatelessWidget {
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(2),
-                                  child: Container(width: 4, height: 68, color: indicatorColor),
+                                  child: Container(
+                                    width: 4,
+                                    height: 68,
+                                    color: indicatorColor,
+                                  ),
                                 ),
                                 const SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Expanded(
                                             child: Text(
                                               appointment.patientName,
-                                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF111827)),
+                                              style: const TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFF111827),
+                                              ),
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
                                           if (filterType == 'all')
                                             Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                              decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 4,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: statusColor.withValues(
+                                                  alpha: 0.1,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
                                               child: Text(
-                                                appointment.status[0].toUpperCase() + appointment.status.substring(1),
-                                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: statusColor),
+                                                appointment.status[0]
+                                                        .toUpperCase() +
+                                                    appointment.status
+                                                        .substring(1),
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: statusColor,
+                                                ),
                                               ),
                                             ),
                                         ],
@@ -152,25 +193,55 @@ class PatientListDialog extends StatelessWidget {
                                       // DOCTOR NAME — THIS IS THE KEY LINE
                                       Text(
                                         appointment.doctorName,
-                                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500, color: Colors.grey[800]),
+                                        style: TextStyle(
+                                          fontSize: 13.5,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.grey[800],
+                                        ),
                                       ),
                                       const SizedBox(height: 8),
                                       Row(
                                         children: [
-                                          Icon(Icons.medical_services_outlined, size: 14, color: Colors.grey[600]),
+                                          Icon(
+                                            Icons.medical_services_outlined,
+                                            size: 14,
+                                            color: Colors.grey[600],
+                                          ),
                                           const SizedBox(width: 6),
                                           Expanded(
-                                            child: Text(appointment.procedure, style: TextStyle(fontSize: 13, color: Colors.grey[700]), overflow: TextOverflow.ellipsis),
+                                            child: Text(
+                                              appointment.procedure,
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: Colors.grey[700],
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
                                           ),
-                                          Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
+                                          Icon(
+                                            Icons.access_time,
+                                            size: 14,
+                                            color: Colors.grey[600],
+                                          ),
                                           const SizedBox(width: 6),
-                                          Text(appointment.time, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey[800])),
+                                          Text(
+                                            appointment.time,
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.grey[800],
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ],
                                   ),
                                 ),
-                                Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
+                                Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 16,
+                                  color: Colors.grey[400],
+                                ),
                               ],
                             ),
                           ),

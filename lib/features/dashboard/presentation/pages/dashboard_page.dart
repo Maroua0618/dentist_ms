@@ -28,12 +28,12 @@ import 'package:dentist_ms/features/dashboard/bloc/treatments_event.dart';
 import 'package:dentist_ms/features/dashboard/bloc/performance_state.dart';
 import 'package:dentist_ms/features/dashboard/bloc/performance_event.dart';
 import 'dashboard_constants.dart';
-import 'panels/revenue_panel.dart';
-import 'panels/patients_panel.dart';
-import 'panels/treatments_panel.dart';
-import 'panels/performance_panel.dart';
-import 'widgets/metric_card.dart';
-import 'widgets/pill_tabs.dart';
+import '../panels/revenue_panel.dart';
+import '../panels/patients_panel.dart';
+import '../panels/treatments_panel.dart';
+import '../panels/performance_panel.dart';
+import '../widgets/metric_card.dart';
+import '../widgets/pill_tabs.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -181,7 +181,7 @@ class _DashboardPageContentState extends State<_DashboardPageContent> {
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
+                              color: Colors.black.withValues(alpha: 0.04),
                               blurRadius: 18,
                               offset: const Offset(0, 8),
                             ),
@@ -376,7 +376,6 @@ class _DashboardPageContentState extends State<_DashboardPageContent> {
       ),
     );
   }
-
 
   Widget _buildTabBody(double screenWidth, double screenHeight) {
     switch (currentTab) {

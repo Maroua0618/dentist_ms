@@ -7,8 +7,7 @@ class AddPaymentDialog extends StatefulWidget {
   final Map<String, dynamic>? payment;
   final List<Invoice> invoices;
 
-  const AddPaymentDialog({Key? key, this.payment, this.invoices = const []})
-    : super(key: key);
+  const AddPaymentDialog({super.key, this.payment, this.invoices = const []});
 
   @override
   State<AddPaymentDialog> createState() => _AddPaymentDialogState();
@@ -181,7 +180,7 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
           controller: _amountController,
           decoration: _inputDecoration(
             '0.00',
-          ).copyWith(suffixText: '\DA ', suffixStyle: AppTextStyles.body1),
+          ).copyWith(suffixText: 'DA ', suffixStyle: AppTextStyles.body1),
           keyboardType: TextInputType.number,
           validator: (value) {
             if (value == null || value.isEmpty) {

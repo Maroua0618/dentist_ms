@@ -9,12 +9,12 @@ class BillingStatCard extends StatefulWidget {
   final IconData icon;
 
   const BillingStatCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.value,
     required this.color,
     required this.icon,
-  }) : super(key: key);
+  });
 
   @override
   State<BillingStatCard> createState() => _BillingStatCardState();
@@ -38,14 +38,14 @@ class _BillingStatCardState extends State<BillingStatCard> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: _isHovered
-                  ? widget.color.withOpacity(0.5)
+                  ? widget.color.withValues(alpha: 0.5)
                   : const Color(0xFFE5E7EB),
               width: _isHovered ? 2 : 1,
             ),
             boxShadow: [
               if (_isHovered)
                 BoxShadow(
-                  color: widget.color.withOpacity(0.2),
+                  color: widget.color.withValues(alpha: 0.2),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -98,13 +98,13 @@ class BillingStatisticsSection extends StatelessWidget {
   final double netProfit;
 
   const BillingStatisticsSection({
-    Key? key,
+    super.key,
     required this.responsive,
     required this.totalRevenue,
     required this.pendingPayments,
     required this.overdue,
     required this.netProfit,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -7,7 +7,7 @@ import 'package:dentist_ms/features/dashboard/bloc/performance_bloc.dart';
 import 'package:dentist_ms/features/dashboard/bloc/performance_event.dart';
 import 'package:dentist_ms/features/dashboard/bloc/performance_state.dart';
 import 'package:dentist_ms/features/dashboard/models/performance_chart_data.dart';
-import '../dashboard_constants.dart';
+import '../pages/dashboard_constants.dart';
 import '../widgets/doctor_performance_row.dart';
 
 class PerformancePanel extends StatefulWidget {

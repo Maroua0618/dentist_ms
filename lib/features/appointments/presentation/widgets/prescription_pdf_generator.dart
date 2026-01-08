@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
-import 'package:dentist_ms/features/settings/models/clinicInfo.dart';
+import 'package:dentist_ms/features/settings/models/clinic_info.dart';
 import 'dart:typed_data';
 import '../models/appointment_model.dart';
 

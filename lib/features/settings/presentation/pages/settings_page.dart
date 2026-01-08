@@ -1,6 +1,9 @@
 import 'package:dentist_ms/core/constants/app_colors.dart';
 import 'package:dentist_ms/core/constants/app_text_styles.dart';
+import 'package:dentist_ms/features/settings/bloc/clinic_info_cubit.dart';
+import 'package:dentist_ms/features/settings/bloc/clinic_info_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../widgets/profil_widget.dart';
 import '../widgets/clinic_widget.dart';
 import '../widgets/security_widget.dart';
@@ -15,6 +18,7 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  ClinicInfoStatus? _lastClinicStatus;
 
   final ClinicControllers clinicControllers = ClinicControllers();
   final ProfilControllers profilControllers = ProfilControllers();
@@ -96,8 +100,15 @@ class _SettingsPageState extends State<SettingsPage>
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: TabBar(
                   controller: _tabController,
@@ -112,7 +123,7 @@ class _SettingsPageState extends State<SettingsPage>
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
@@ -133,9 +144,9 @@ class _SettingsPageState extends State<SettingsPage>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.local_hospital, size: 20),
+                          Icon(Icons.business_rounded, size: 20),
                           SizedBox(width: 8),
-                          Text('Clinic Info'),
+                          Text('Clinique'),
                         ],
                       ),
                     ),
@@ -143,7 +154,7 @@ class _SettingsPageState extends State<SettingsPage>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.person, size: 20),
+                          Icon(Icons.person_rounded, size: 20),
                           SizedBox(width: 8),
                           Text('Profil'),
                         ],
@@ -153,7 +164,7 @@ class _SettingsPageState extends State<SettingsPage>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.lock, size: 20),
+                          Icon(Icons.shield_rounded, size: 20),
                           SizedBox(width: 8),
                           Text('Sécurité'),
                         ],
@@ -167,32 +178,107 @@ class _SettingsPageState extends State<SettingsPage>
 
               // TabBarView
               Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    // Clinic Info Tab
-                    SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: clinic(context, width, height, clinicControllers),
-                    ),
-
-                    // Profile Tab
-                    SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: profil(context, width, height, profilControllers),
-                    ),
-
-                    // Security Tab
-                    SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: security(
-                        context,
-                        width,
-                        height,
-                        securityControllers,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      // Clinic Info Tab
+                      Builder(
+                        builder: (context) {
+                          final clinicCubit = context.read<ClinicInfoCubit?>();
+
+                          if (clinicCubit == null) {
+                            return const Center(
+                              child: Text(
+                                'Veuillez redémarrer l\'application',
+                                style: TextStyle(fontSize: 16),
+                              ),
+                            );
+                          }
+
+                          return BlocListener<ClinicInfoCubit, ClinicInfoState>(
+                            bloc: clinicCubit,
+                            listenWhen: (previous, current) =>
+                                previous.status != current.status ||
+                                previous.clinicInfo != current.clinicInfo,
+                            listener: (context, state) {
+                              if (state.status == ClinicInfoStatus.loaded &&
+                                  _lastClinicStatus ==
+                                      ClinicInfoStatus.saving) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Informations de la clinique sauvegardées',
+                                    ),
+                                  ),
+                                );
+                              } else if (state.status ==
+                                  ClinicInfoStatus.error) {
+                                final message =
+                                    state.errorMessage ??
+                                    "Impossible d'enregistrer les informations";
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(message)),
+                                );
+                              }
+
+                              _lastClinicStatus = state.status;
+                            },
+                            child:
+                                BlocBuilder<ClinicInfoCubit, ClinicInfoState>(
+                                  bloc: clinicCubit,
+                                  builder: (context, clinicState) {
+                                    return SingleChildScrollView(
+                                      physics: const BouncingScrollPhysics(),
+                                      child: clinic(
+                                        context,
+                                        width,
+                                        height,
+                                        clinicControllers,
+                                        clinicState.clinicInfo,
+                                        clinicState,
+                                      ),
+                                    );
+                                  },
+                                ),
+                          );
+                        },
+                      ),
+
+                      // Profile Tab
+                      SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: profil(
+                          context,
+                          width,
+                          height,
+                          profilControllers,
+                        ),
+                      ),
+
+                      // Security Tab
+                      SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: security(
+                          context,
+                          width,
+                          height,
+                          securityControllers,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

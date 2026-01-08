@@ -71,8 +71,9 @@ class PaymentRemoteDataSource {
 
   /// Update an existing payment
   Future<Payment> updatePayment(Payment payment) async {
-    if (payment.id == null)
+    if (payment.id == null) {
       throw Exception('Payment ID is required for update');
+    }
 
     try {
       final response = await _client

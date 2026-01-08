@@ -1,12 +1,16 @@
+import 'dart:typed_data';
 import 'package:dentist_ms/core/constants/app_colors.dart';
 import 'package:dentist_ms/core/constants/app_routes.dart';
 import 'package:dentist_ms/core/constants/app_text_styles.dart';
 import 'package:dentist_ms/features/auth/bloc/auth_bloc.dart';
 import 'package:dentist_ms/features/auth/bloc/auth_event.dart';
 import 'package:dentist_ms/features/auth/bloc/auth_state.dart';
+import 'package:dentist_ms/features/settings/bloc/clinic_info_cubit.dart';
+import 'package:dentist_ms/features/settings/bloc/clinic_info_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 
 class AppNavbar extends StatefulWidget {
   final int selectedIndex;
@@ -30,6 +34,33 @@ class AppNavbar extends StatefulWidget {
 
 class _AppNavbarState extends State<AppNavbar> {
   bool _isCollapsed = false;
+  final Map<String, Uint8List> _imageCache = {};
+
+  /// Load profile image from Supabase Storage
+  Future<Uint8List?> _loadProfileImage(String? imageUrl) async {
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return null;
+    }
+
+    // Check cache first
+    if (_imageCache.containsKey(imageUrl)) {
+      return _imageCache[imageUrl];
+    }
+
+    try {
+      // Download image bytes from Supabase Storage
+      final response = await Supabase.instance.client.storage
+          .from('profile-images')
+          .download(imageUrl);
+
+      // Cache the image
+      _imageCache[imageUrl] = response;
+      return response;
+    } catch (e) {
+      print('Error loading profile image in navbar: $e');
+      return null;
+    }
+  }
 
   void _showSignOutDialog() {
     showDialog(
@@ -54,7 +85,7 @@ class _AppNavbarState extends State<AppNavbar> {
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(
               'Annuler',
-              style: TextStyle(color: Colors.white.withOpacity(0.7)),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
             ),
           ),
           ElevatedButton(
@@ -163,25 +194,37 @@ class _AppNavbarState extends State<AppNavbar> {
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: selected
             ? BoxDecoration(
-                color: AppColors.white.withOpacity(0.1),
+                color: AppColors.white.withValues(alpha: 0.1),
                 border: Border.all(color: AppColors.cardBlue),
                 borderRadius: BorderRadius.circular(14),
               )
             : null,
         child: Row(
           children: [
-            // Avatar
-            CircleAvatar(
-              radius: 12,
-              backgroundColor: const Color(0xFF4F7EFF),
-              child: Text(
-                user.firstName[0].toUpperCase(),
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
+            // Avatar with profile image
+            FutureBuilder<Uint8List?>(
+              future: _loadProfileImage(user.profileImageUrl),
+              builder: (context, snapshot) {
+                return CircleAvatar(
+                  radius: 16,
+                  backgroundColor: const Color(0xFF4F7EFF),
+                  backgroundImage: snapshot.hasData && snapshot.data != null
+                      ? MemoryImage(snapshot.data!)
+                      : null,
+                  child: snapshot.hasData && snapshot.data != null
+                      ? null
+                      : Text(
+                          user.firstName.isNotEmpty
+                              ? user.firstName[0].toUpperCase()
+                              : 'U',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                );
+              },
             ),
 
             if (!_isCollapsed) ...[
@@ -202,7 +245,7 @@ class _AppNavbarState extends State<AppNavbar> {
                       user.role.name.toUpperCase(),
                       style: TextStyle(
                         color: selected
-                            ? Colors.white.withOpacity(0.7)
+                            ? Colors.white.withValues(alpha: 0.7)
                             : Colors.grey,
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
@@ -269,121 +312,140 @@ class _AppNavbarState extends State<AppNavbar> {
           },
         ];
 
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          width: _isCollapsed ? 80 : expandedWidth,
-          decoration: AppColors.navBarBackground,
-          child: Column(
-            crossAxisAlignment: _isCollapsed
-                ? CrossAxisAlignment.center
-                : CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(width: 1, color: AppColors.azure_2),
+        final clinicCubit = context.read<ClinicInfoCubit?>();
+
+        Widget buildShell(String clinicName) {
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            width: _isCollapsed ? 80 : expandedWidth,
+            decoration: AppColors.navBarBackground,
+            child: Column(
+              crossAxisAlignment: _isCollapsed
+                  ? CrossAxisAlignment.center
+                  : CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(width: 1, color: AppColors.azure_2),
+                    ),
                   ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (!_isCollapsed) ...[
-                        Container(
-                          decoration: AppColors.selectedPage.copyWith(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          padding: const EdgeInsets.all(8),
-                          child: SvgPicture.asset(
-                            "assets/icons/pfp.svg",
-                            width: 25,
-                            height: 25,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Dental clinic',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                'Clinic Management',
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 12,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      Container(
-                        decoration: _isCollapsed
-                            ? BoxDecoration(
-                                border: Border.all(color: AppColors.azure),
-                                borderRadius: BorderRadius.circular(10),
-                              )
-                            : null,
-                        child: IconButton(
-                          icon: AnimatedRotation(
-                            duration: const Duration(milliseconds: 200),
-                            turns: _isCollapsed ? 0.5 : 0,
-                            child: const Icon(
-                              Icons.chevron_left,
-                              size: 28,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (!_isCollapsed) ...[
+                          Container(
+                            decoration: AppColors.selectedPage.copyWith(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            padding: const EdgeInsets.all(4),
+                            child: SvgPicture.asset(
+                              "assets/images/dms.svg",
+                              width: 35,
+                              height: 35,
                               color: Colors.white,
                             ),
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _isCollapsed = !_isCollapsed;
-                            });
-                          },
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  clinicName,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                const Text(
+                                  'Clinic Management',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        Container(
+                          decoration: _isCollapsed
+                              ? BoxDecoration(
+                                  border: Border.all(color: AppColors.azure),
+                                  borderRadius: BorderRadius.circular(10),
+                                )
+                              : null,
+                          child: IconButton(
+                            icon: AnimatedRotation(
+                              duration: const Duration(milliseconds: 200),
+                              turns: _isCollapsed ? 0.5 : 0,
+                              child: const Icon(
+                                Icons.chevron_left,
+                                size: 28,
+                                color: Colors.white,
+                              ),
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _isCollapsed = !_isCollapsed;
+                              });
+                            },
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 40),
-                      ...List.generate(
-                        navItems.length,
-                        (index) => _buildNavItem(
-                          navItems[index]["title"]!,
-                          navItems[index]["icon"]!,
-                          index,
-                          counter: navItems[index]["counter"] ?? "0",
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 40),
+                        ...List.generate(
+                          navItems.length,
+                          (index) => _buildNavItem(
+                            navItems[index]["title"]!,
+                            navItems[index]["icon"]!,
+                            index,
+                            counter: navItems[index]["counter"] ?? "0",
+                          ),
                         ),
-                      ),
-                      const Spacer(),
+                        const Spacer(),
 
-                      // Profile/Settings button at bottom
-                      _buildProfileSettingsButton(authState),
-                      const SizedBox(height: 8),
-                    ],
+                        // Profile/Settings button at bottom
+                        _buildProfileSettingsButton(authState),
+                        const SizedBox(height: 8),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          );
+        }
+
+        if (clinicCubit == null) {
+          return buildShell('Dental clinic');
+        }
+
+        return BlocBuilder<ClinicInfoCubit, ClinicInfoState>(
+          bloc: clinicCubit,
+          builder: (context, clinicState) {
+            final clinicName = clinicState.clinicInfo.clinicName.isEmpty
+                ? 'Dental clinic'
+                : clinicState.clinicInfo.clinicName;
+            return buildShell(clinicName);
+          },
         );
       },
     );

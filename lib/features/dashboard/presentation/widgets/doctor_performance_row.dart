@@ -9,7 +9,7 @@ class DoctorPerformanceRow extends StatelessWidget {
 
   const DoctorPerformanceRow({
     super.key,
-    required this. doctorName,
+    required this.doctorName,
     required this.completedTreatments,
     required this.progress,
     required this.rank,
@@ -28,10 +28,10 @@ class DoctorPerformanceRow extends StatelessWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: _getRankColor().withOpacity(0.15),
+                  color: _getRankColor().withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child:  Center(
+                child: Center(
                   child: Text(
                     '$rank',
                     style: TextStyle(
@@ -47,7 +47,7 @@ class DoctorPerformanceRow extends StatelessWidget {
                 child: Text(
                   doctorName,
                   style: const TextStyle(
-                    fontSize:  14,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: kTextPrimary,
                   ),
@@ -65,23 +65,26 @@ class DoctorPerformanceRow extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height:  8),
+          const SizedBox(height: 8),
           Stack(
-            children:  [
+            children: [
               Container(
                 height: 8,
-                decoration:  BoxDecoration(
+                decoration: BoxDecoration(
                   color: const Color(0xFFE7E7E7),
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
               FractionallySizedBox(
-                widthFactor: progress. clamp(0.0, 1.0),
+                widthFactor: progress.clamp(0.0, 1.0),
                 child: Container(
                   height: 8,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [_getRankColor(), _getRankColor().withOpacity(0.7)],
+                      colors: [
+                        _getRankColor(),
+                        _getRankColor().withValues(alpha: 0.7),
+                      ],
                     ),
                     borderRadius: BorderRadius.circular(999),
                   ),

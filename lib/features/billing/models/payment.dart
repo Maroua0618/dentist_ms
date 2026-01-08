@@ -11,7 +11,7 @@ class Payment extends Equatable {
   final String? reference;
   final String? notes;
 
-  Payment({
+  const Payment({
     this.id,
     this.invoiceId,
     this.invoiceNumber,

@@ -173,10 +173,10 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withOpacity(0.1),
+                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: const Color(0xFF10B981).withOpacity(0.3),
+                    color: const Color(0xFF10B981).withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -363,7 +363,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                   vertical: 0,
                 ),
                 decoration: BoxDecoration(
-                  color: _getStatusColor(currentStatus).withOpacity(0.1),
+                  color: _getStatusColor(currentStatus).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -396,7 +396,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -427,7 +427,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: appointment.cardColor.withOpacity(0.15),
+                                color: appointment.cardColor.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -451,7 +451,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                           decoration: BoxDecoration(
                             color: isAppointmentCompleted
                                 ? Colors.grey[200]
-                                : const Color(0xFF3B82F6).withOpacity(0.1),
+                                : const Color(0xFF3B82F6).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
@@ -609,7 +609,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isActive ? color.withOpacity(0.15) : Colors.grey[50],
+          color: isActive ? color.withValues(alpha: 0.15) : Colors.grey[50],
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isActive ? color : const Color(0xFFE5E7EB),
@@ -717,6 +717,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
     ); // Default to Aperçu
   }
 
+  // ignore: unused_element
   Widget _buildInfoRow(String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

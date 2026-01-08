@@ -7,8 +7,7 @@ import 'package:dentist_ms/features/billing/data/treatment_remote.dart';
 class AddInvoiceItemDialog extends StatefulWidget {
   final int invoiceId;
 
-  const AddInvoiceItemDialog({Key? key, required this.invoiceId})
-    : super(key: key);
+  const AddInvoiceItemDialog({super.key, required this.invoiceId});
 
   @override
   State<AddInvoiceItemDialog> createState() => _AddInvoiceItemDialogState();
@@ -261,7 +260,7 @@ class _AddInvoiceItemDialogState extends State<AddInvoiceItemDialog> {
           controller: _unitPriceController,
           decoration: _inputDecoration(
             '0.00',
-          ).copyWith(suffixText: '\DA ', suffixStyle: AppTextStyles.body1),
+          ).copyWith(suffixText: 'DA ', suffixStyle: AppTextStyles.body1),
           keyboardType: TextInputType.number,
           validator: (value) {
             if (value == null || value.isEmpty) {
@@ -281,9 +280,9 @@ class _AddInvoiceItemDialogState extends State<AddInvoiceItemDialog> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.05),
+        color: AppColors.primary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,

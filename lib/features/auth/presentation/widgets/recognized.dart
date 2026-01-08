@@ -147,7 +147,7 @@ class _ProfileSection extends StatelessWidget {
               ),
             ],
             image: const DecorationImage(
-              image: AssetImage("assets/images/person.png"),
+              image: AssetImage("assets/images/pfp.png"),
               fit: BoxFit.cover,
             ),
           ),

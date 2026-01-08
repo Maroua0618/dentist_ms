@@ -10,7 +10,7 @@ class InvoiceItem extends Equatable {
   final double? unitPrice;
   final double? totalPrice;
 
-  InvoiceItem({
+  const InvoiceItem({
     this.id,
     this.invoiceId,
     this.treatmentId,

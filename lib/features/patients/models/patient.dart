@@ -15,6 +15,7 @@ class Patient extends Equatable {
   final String? status;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? profileImageUrl;
 
   const Patient({
     this.id,
@@ -31,6 +32,7 @@ class Patient extends Equatable {
     this.status,
     this.createdAt,
     this.updatedAt,
+    this.profileImageUrl,
   });
 
   /// Computed full name for display purposes
@@ -64,6 +66,7 @@ class Patient extends Equatable {
       updatedAt: json['updated_at'] != null
           ? DateTime.tryParse(json['updated_at'].toString())
           : null,
+      profileImageUrl: json['profile_image_url'] as String?,
     );
   }
 
@@ -81,6 +84,7 @@ class Patient extends Equatable {
       'address': address,
       'city': city,
       'status': status ?? 'active',
+      'profile_image_url':  profileImageUrl,
     };
 
     if (id != null) {
@@ -105,6 +109,7 @@ class Patient extends Equatable {
     String? status,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? profileImageUrl,
   }) {
     return Patient(
       id: id ?? this.id,
@@ -121,26 +126,28 @@ class Patient extends Equatable {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      profileImageUrl: profileImageUrl ??  this.profileImageUrl,
     );
   }
 
   @override
   List<Object?> get props => [
-        id,
-        firstName,
-        lastName,
-        gender,
-        dateOfBirth,
-        bloodType,
-        phone1,
-        phone2,
-        email,
-        address,
-        city,
-        status,
-        createdAt,
-        updatedAt,
-      ];
+    id,
+    firstName,
+    lastName,
+    gender,
+    dateOfBirth,
+    bloodType,
+    phone1,
+    phone2,
+    email,
+    address,
+    city,
+    status,
+    createdAt,
+    updatedAt,
+    profileImageUrl
+  ];
 
   /// Optional: nice for debugging
   @override

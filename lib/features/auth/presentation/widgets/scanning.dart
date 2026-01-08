@@ -54,7 +54,7 @@ class _FaceScanningOverlayState extends State<FaceScanningOverlay>
           child: Container(
             width: size.width,
             height: size.height,
-            color: Colors.black.withOpacity(0.6),
+            color: Colors.black.withValues(alpha: 0.6),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
               child: Container(color: Colors.transparent),
@@ -77,12 +77,12 @@ class _FaceScanningOverlayState extends State<FaceScanningOverlay>
                   color: const Color(0xFF1A2332),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.4),
+                      color: Colors.black.withValues(alpha: 0.4),
                       blurRadius: 30,
                       offset: const Offset(0, 15),
                     ),
@@ -114,7 +114,7 @@ class _FaceScanningOverlayState extends State<FaceScanningOverlay>
                             'Please look directly at the camera',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withValues(alpha: 0.5),
                               fontSize: 14,
                             ),
                           ),
@@ -174,7 +174,7 @@ class _FaceScanningOverlayState extends State<FaceScanningOverlay>
                     border: Border.all(
                       color: const Color(
                         0xFF4F7EFF,
-                      ).withOpacity(0.3 * (1 - _pulseController.value)),
+                      ).withValues(alpha: 0.3 * (1 - _pulseController.value)),
                       width: 1,
                     ),
                   ),
@@ -195,7 +195,7 @@ class _FaceScanningOverlayState extends State<FaceScanningOverlay>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: const Color(0xFF9D6CFF).withOpacity(0.3),
+                      color: const Color(0xFF9D6CFF).withValues(alpha: 0.3),
                       width: 1,
                     ),
                   ),
@@ -213,14 +213,14 @@ class _FaceScanningOverlayState extends State<FaceScanningOverlay>
               shape: BoxShape.circle,
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFF4F7EFF).withOpacity(0.2),
-                  const Color(0xFF9D6CFF).withOpacity(0.2),
+                  const Color(0xFF4F7EFF).withValues(alpha: 0.2),
+                  const Color(0xFF9D6CFF).withValues(alpha: 0.2),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               border: Border.all(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 width: 1,
               ),
             ),
@@ -231,7 +231,7 @@ class _FaceScanningOverlayState extends State<FaceScanningOverlay>
                   child: Icon(
                     Icons.face,
                     size: 60,
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                   ),
                 ),
 
@@ -252,10 +252,10 @@ class _FaceScanningOverlayState extends State<FaceScanningOverlay>
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              const Color(0xFF00D9A3).withOpacity(0.0),
+                              const Color(0xFF00D9A3).withValues(alpha: 0.0),
                               const Color(
                                 0xFF00D9A3,
-                              ).withOpacity(0.5), // Scan line color
+                              ).withValues(alpha: 0.5), // Scan line color
                             ],
                             stops: const [0.0, 1.0],
                           ),
@@ -280,7 +280,9 @@ class _FaceScanningOverlayState extends State<FaceScanningOverlay>
                           color: const Color(0xFF00D9A3),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00D9A3).withOpacity(0.8),
+                              color: const Color(
+                                0xFF00D9A3,
+                              ).withValues(alpha: 0.8),
                               blurRadius: 5,
                               spreadRadius: 1,
                             ),
@@ -386,7 +388,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
               width: 8,
               height: 8,
               decoration: BoxDecoration(
-                color: const Color(0xFF4F7EFF).withOpacity(opacity),
+                color: const Color(0xFF4F7EFF).withValues(alpha: opacity),
                 shape: BoxShape.circle,
               ),
             );

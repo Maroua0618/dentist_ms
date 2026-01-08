@@ -5,7 +5,7 @@ import 'package:dentist_ms/core/constants/app_text_styles.dart';
 class AddTreatmentDialog extends StatefulWidget {
   final Map<String, dynamic>? treatment; // For editing existing treatment
 
-  const AddTreatmentDialog({Key? key, this.treatment}) : super(key: key);
+  const AddTreatmentDialog({super.key, this.treatment});
 
   @override
   State<AddTreatmentDialog> createState() => _AddTreatmentDialogState();
@@ -178,7 +178,7 @@ class _AddTreatmentDialogState extends State<AddTreatmentDialog> {
           controller: _priceController,
           decoration: _inputDecoration(
             '0.00',
-          ).copyWith(suffixText: '\DA ', suffixStyle: AppTextStyles.body1),
+          ).copyWith(suffixText: 'DA ', suffixStyle: AppTextStyles.body1),
           keyboardType: TextInputType.number,
           validator: (value) {
             if (value == null || value.isEmpty) {

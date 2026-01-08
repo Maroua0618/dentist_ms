@@ -20,13 +20,13 @@ class BillingExpensesControls extends StatelessWidget {
   final List<String> categories;
 
   const BillingExpensesControls({
-    Key? key,
+    super.key,
     required this.responsive,
     required this.onAddExpense,
     this.selectedCategory = 'Toutes les catégories',
     required this.onCategoryChanged,
     this.categories = const [],
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -67,11 +67,11 @@ class BillingExpensesTable extends StatelessWidget {
   final bool canEdit;
 
   const BillingExpensesTable({
-    Key? key,
+    super.key,
     required this.expenses,
     required this.responsive,
     this.canEdit = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -178,7 +178,7 @@ class BillingExpensesTable extends StatelessWidget {
                   vertical: 8,
                 ),
                 side: BorderSide(
-                  color: AppColors.statusCancelled.withOpacity(0.2),
+                  color: AppColors.statusCancelled.withValues(alpha: 0.2),
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(6),

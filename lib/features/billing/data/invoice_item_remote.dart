@@ -73,8 +73,9 @@ class InvoiceItemRemoteDataSource {
 
   /// Update an existing invoice item
   Future<InvoiceItem> updateInvoiceItem(InvoiceItem item) async {
-    if (item.id == null)
+    if (item.id == null) {
       throw Exception('Invoice item ID is required for update');
+    }
 
     try {
       final response = await _client

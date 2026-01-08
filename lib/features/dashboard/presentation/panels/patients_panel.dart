@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:dentist_ms/core/constants/app_colors.dart';
 import 'package:dentist_ms/features/dashboard/models/patients_chart_data.dart';
-import '../dashboard_constants.dart';
+import '../pages/dashboard_constants.dart';
 
 class PatientsPanel extends StatefulWidget {
   final double screenWidth;

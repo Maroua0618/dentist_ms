@@ -15,7 +15,7 @@ class Invoice extends Equatable {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  Invoice({
+  const Invoice({
     this.id,
     this.invoiceNumber,
     this.patientId,

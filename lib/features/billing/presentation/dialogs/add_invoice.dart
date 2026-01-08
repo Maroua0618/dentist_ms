@@ -5,7 +5,7 @@ import 'package:dentist_ms/features/patients/models/patient.dart';
 import 'package:dentist_ms/features/patients/data/patient_remote.dart';
 
 class AddInvoiceDialog extends StatefulWidget {
-  const AddInvoiceDialog({Key? key}) : super(key: key);
+  const AddInvoiceDialog({super.key});
 
   @override
   State<AddInvoiceDialog> createState() => _AddInvoiceDialogState();
@@ -250,7 +250,7 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
           controller: _discountController,
           decoration: _inputDecoration(
             '0.00',
-          ).copyWith(suffixText: '\DA ', suffixStyle: AppTextStyles.body1),
+          ).copyWith(suffixText: 'DA ', suffixStyle: AppTextStyles.body1),
           keyboardType: TextInputType.number,
           validator: (value) {
             if (value != null && value.isNotEmpty) {
