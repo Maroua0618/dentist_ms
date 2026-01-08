@@ -116,7 +116,7 @@ class _DashboardPageContentState extends State<_DashboardPageContent> {
 
     context.read<RevenueBloc>().add(LoadRevenueChart(year: year));
     context.read<PatientBloc>().add(LoadPatientsChart(year: year));
-    context.read<TreatmentsBloc>().add(LoadTreatmentsChart());
+    context.read<TreatmentsBloc>().add(LoadTreatmentsChart(year: year));
     context.read<PerformanceBloc>().add(LoadPerformanceChart(year: year));
   }
 
@@ -412,7 +412,7 @@ class _DashboardPageContentState extends State<_DashboardPageContent> {
 
       context.read<RevenueBloc>().add(LoadRevenueChart(year: currentYear));
       context.read<PatientBloc>().add(LoadPatientsChart(year: currentYear));
-      context.read<TreatmentsBloc>().add(LoadTreatmentsChart());
+      context.read<TreatmentsBloc>().add(LoadTreatmentsChart(year: currentYear));
       context.read<PerformanceBloc>().add(
         LoadPerformanceChart(year: currentYear),
       );
