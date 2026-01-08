@@ -17,7 +17,7 @@ class TreatmentsBloc extends Bloc<TreatmentsEvent, TreatmentsState> {
   ) async {
     emit(TreatmentsLoadInProgress());
     try {
-      final chartData = await repository.getTreatmentsChartData();
+      final chartData = await repository.getTreatmentsChartData(event.year);
       emit(TreatmentsLoadSuccess(chartData));
     } catch (e) {
       emit(TreatmentsOperationFailure(e.toString()));
@@ -30,7 +30,7 @@ class TreatmentsBloc extends Bloc<TreatmentsEvent, TreatmentsState> {
   ) async {
     emit(TreatmentsLoadInProgress());
     try {
-      final chartData = await repository.getTreatmentsChartData();
+      final chartData = await repository.getTreatmentsChartData(event.year);
       emit(TreatmentsLoadSuccess(chartData));
     } catch (e) {
       emit(TreatmentsOperationFailure(e.toString()));
