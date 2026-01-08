@@ -25,7 +25,7 @@ class _TreatmentsPanelState extends State<TreatmentsPanel> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<TreatmentsBloc>().add(LoadTreatmentsChart());
+        context.read<TreatmentsBloc>().add(LoadTreatmentsChart(year: DateTime.now().year));
       }
     });
   }
