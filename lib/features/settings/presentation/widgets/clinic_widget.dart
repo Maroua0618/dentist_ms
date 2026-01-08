@@ -1,5 +1,19 @@
-import 'package:flutter/material.dart';
 import 'package:dentist_ms/core/constants/app_text_styles.dart';
+import 'package:dentist_ms/features/settings/bloc/clinic_info_cubit.dart';
+import 'package:dentist_ms/features/settings/bloc/clinic_info_state.dart';
+import 'package:dentist_ms/features/settings/models/clinic_info.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+const List<String> clinicDays = [
+  "Samedi",
+  "Dimanche",
+  "Lundi",
+  "Mardi",
+  "Mercredi",
+  "Jeudi",
+  "Vendredi",
+];
 
 // class to hold all the controllers
 class ClinicControllers {
@@ -11,6 +25,18 @@ class ClinicControllers {
   final TextEditingController addressController = TextEditingController();
   final TextEditingController aboutController = TextEditingController();
   final Map<String, List<TextEditingController>> workingHoursControllers = {};
+  ClinicInfo? _lastAppliedClinic;
+
+  void ensureWorkingHoursControllers(List<String> days) {
+    if (workingHoursControllers.isEmpty) {
+      for (var day in days) {
+        workingHoursControllers[day] = [
+          TextEditingController(),
+          TextEditingController(),
+        ];
+      }
+    }
+  }
 
   // Method to update controllers with data
   void updateControllersFromClinicData({
@@ -54,6 +80,23 @@ class ClinicControllers {
     }
   }
 
+  void applyClinicInfo(ClinicInfo clinicInfo) {
+    if (_lastAppliedClinic == clinicInfo) {
+      return;
+    }
+
+    updateControllersFromClinicData(
+      clinicName: clinicInfo.clinicName,
+      registrationNumber: clinicInfo.registrationNumber,
+      email: clinicInfo.email,
+      phone: clinicInfo.phone,
+      address: clinicInfo.address,
+      about: clinicInfo.about,
+    );
+
+    _lastAppliedClinic = clinicInfo;
+  }
+
   void dispose() {
     clinicNameController.dispose();
     registrationNumberController.dispose();
@@ -77,46 +120,12 @@ Widget clinic(
   double width,
   double height,
   ClinicControllers controllers,
+  ClinicInfo clinicInfo,
+  ClinicInfoState clinicState,
 ) {
-  List<String> daysList = [
-    "Samedi",
-    "Dimanche",
-    "Lundi",
-    "Mardi",
-    "Mercredi",
-    "Jeudi",
-    "Vendredi",
-  ];
-
-  // Initialize working hours controllers if not already done
-  if (controllers.workingHoursControllers.isEmpty) {
-    for (var day in daysList) {
-      controllers.workingHoursControllers[day] = [
-        TextEditingController(),
-        TextEditingController(),
-      ];
-    }
-
-    // You can call this method to populate with initial data
-    // For example, from your database or default values:
-    controllers.updateControllersFromClinicData(
-      clinicName: 'Nom de la clinique par défaut',
-      registrationNumber: '12345',
-      email: 'clinique@example.com',
-      phone: '+1234567890',
-      address: 'Adresse par défaut',
-      about: 'Description de la clinique',
-      workingHours: {
-        'Lundi': ['08:00', '17:00'],
-        'Mardi': ['08:00', '17:00'],
-        'Mercredi': ['08:00', '17:00'],
-        'Jeudi': ['08:00', '17:00'],
-        'Vendredi': ['08:00', '17:00'],
-        'Samedi': ['09:00', '13:00'],
-        'Dimanche': ['Fermé', 'Fermé'],
-      },
-    );
-  }
+  controllers.ensureWorkingHoursControllers(clinicDays);
+  controllers.applyClinicInfo(clinicInfo);
+  final isSaving = clinicState.isSaving;
 
   return Card(
     color: Colors.transparent,
@@ -299,7 +308,6 @@ Widget clinic(
               height * 0.18,
               height,
               maxLines: 5,
-              icon: Icons.info,
             ),
 
             SizedBox(height: height * 0.06),
@@ -318,14 +326,25 @@ Widget clinic(
                 ],
               ),
               child: ElevatedButton(
-                onPressed: () {
-                  // You can access the values like this:
-                  print(
-                    'Clinic Name: ${controllers.clinicNameController.text}',
-                  );
-                  print('Email: ${controllers.emailController.text}');
-                  print('Phone: ${controllers.phoneController.text}');
-                },
+                onPressed: isSaving
+                    ? null
+                    : () {
+                        final updatedInfo = clinicInfo.copyWith(
+                          clinicName:
+                              controllers.clinicNameController.text.trim(),
+                          registrationNumber: controllers
+                              .registrationNumberController.text
+                              .trim(),
+                          email: controllers.emailController.text.trim(),
+                          phone: controllers.phoneController.text.trim(),
+                          address: controllers.addressController.text.trim(),
+                          about: controllers.aboutController.text.trim(),
+                        );
+
+                        context
+                            .read<ClinicInfoCubit>()
+                            .saveClinicInfo(updatedInfo);
+                      },
                 style: ElevatedButton.styleFrom(
                   padding: EdgeInsets.symmetric(vertical: height * 0.025),
                   shape: RoundedRectangleBorder(
@@ -334,13 +353,19 @@ Widget clinic(
                   backgroundColor: Theme.of(context).primaryColor,
                   foregroundColor: Colors.white,
                 ),
-                child: Text(
-                  "Enregistrer les modifications",
-                  style: AppTextStyles.bodyWhite.copyWith(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: isSaving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(
+                        "Enregistrer les modifications",
+                        style: AppTextStyles.bodyWhite.copyWith(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
               ),
             ),
           ],

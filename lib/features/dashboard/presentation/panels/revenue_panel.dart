@@ -7,7 +7,7 @@ import 'package:dentist_ms/features/dashboard/bloc/revenue_bloc.dart';
 import 'package:dentist_ms/features/dashboard/bloc/revenue_event.dart';
 import 'package:dentist_ms/features/dashboard/bloc/revenue_state.dart';
 import 'package:dentist_ms/features/dashboard/models/revenue_chart_data.dart';
-import '../dashboard_constants.dart';
+import '../pages/dashboard_constants.dart';
 import '../widgets/legend_dot.dart';
 import '../widgets/treatment_row.dart';
 

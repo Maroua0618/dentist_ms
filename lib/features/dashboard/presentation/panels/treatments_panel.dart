@@ -6,7 +6,7 @@ import 'package:dentist_ms/features/dashboard/bloc/treatments_bloc.dart';
 import 'package:dentist_ms/features/dashboard/bloc/treatments_event.dart';
 import 'package:dentist_ms/features/dashboard/bloc/treatments_state.dart';
 import 'package:dentist_ms/features/dashboard/models/treatments_chart_data.dart';
-import '../dashboard_constants.dart';
+import '../pages/dashboard_constants.dart';
 import '../widgets/treatment_volume_row.dart';
 
 class TreatmentsPanel extends StatefulWidget {

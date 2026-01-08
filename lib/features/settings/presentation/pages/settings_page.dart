@@ -1,6 +1,9 @@
 import 'package:dentist_ms/core/constants/app_colors.dart';
 import 'package:dentist_ms/core/constants/app_text_styles.dart';
+import 'package:dentist_ms/features/settings/bloc/clinic_info_cubit.dart';
+import 'package:dentist_ms/features/settings/bloc/clinic_info_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../widgets/profil_widget.dart';
 import '../widgets/clinic_widget.dart';
 import '../widgets/security_widget.dart';
@@ -15,6 +18,7 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  ClinicInfoStatus? _lastClinicStatus;
 
   final ClinicControllers clinicControllers = ClinicControllers();
   final ProfilControllers profilControllers = ProfilControllers();
@@ -190,14 +194,66 @@ class _SettingsPageState extends State<SettingsPage>
                     controller: _tabController,
                     children: [
                       // Clinic Info Tab
-                      SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        child: clinic(
-                          context,
-                          width,
-                          height,
-                          clinicControllers,
-                        ),
+                      Builder(
+                        builder: (context) {
+                          final clinicCubit = context.read<ClinicInfoCubit?>();
+
+                          if (clinicCubit == null) {
+                            return const Center(
+                              child: Text(
+                                'Veuillez redémarrer l\'application',
+                                style: TextStyle(fontSize: 16),
+                              ),
+                            );
+                          }
+
+                          return BlocListener<ClinicInfoCubit, ClinicInfoState>(
+                            bloc: clinicCubit,
+                            listenWhen: (previous, current) =>
+                                previous.status != current.status ||
+                                previous.clinicInfo != current.clinicInfo,
+                            listener: (context, state) {
+                              if (state.status == ClinicInfoStatus.loaded &&
+                                  _lastClinicStatus ==
+                                      ClinicInfoStatus.saving) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Informations de la clinique sauvegardées',
+                                    ),
+                                  ),
+                                );
+                              } else if (state.status ==
+                                  ClinicInfoStatus.error) {
+                                final message =
+                                    state.errorMessage ??
+                                    "Impossible d'enregistrer les informations";
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(message)),
+                                );
+                              }
+
+                              _lastClinicStatus = state.status;
+                            },
+                            child:
+                                BlocBuilder<ClinicInfoCubit, ClinicInfoState>(
+                                  bloc: clinicCubit,
+                                  builder: (context, clinicState) {
+                                    return SingleChildScrollView(
+                                      physics: const BouncingScrollPhysics(),
+                                      child: clinic(
+                                        context,
+                                        width,
+                                        height,
+                                        clinicControllers,
+                                        clinicState.clinicInfo,
+                                        clinicState,
+                                      ),
+                                    );
+                                  },
+                                ),
+                          );
+                        },
                       ),
 
                       // Profile Tab

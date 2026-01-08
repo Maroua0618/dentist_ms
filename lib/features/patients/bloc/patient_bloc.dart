@@ -11,6 +11,7 @@ class PatientBloc extends Bloc<PatientEvent, PatientState> {
     on<AddPatient>(_onAddPatient);
     on<UpdatePatient>(_onUpdatePatient);
     on<DeletePatient>(_onDeletePatient);
+    on<LoadPatientsChart>(_onLoadPatientsChart);
   }
 
   Future<void> _onLoadPatients(
@@ -30,13 +31,12 @@ class PatientBloc extends Bloc<PatientEvent, PatientState> {
     AddPatient event,
     Emitter<PatientState> emit,
   ) async {
+    emit(PatientsLoadInProgress());
 
-    emit(PatientsLoadInProgress()); 
-    
     try {
       await repository.createPatient(event.patient);
       // Reload the list to get the new ID and sorted order from DB
-      add(LoadPatients()); 
+      add(LoadPatients());
     } catch (e) {
       emit(PatientsOperationFailure(e.toString()));
     }
@@ -62,6 +62,19 @@ class PatientBloc extends Bloc<PatientEvent, PatientState> {
     try {
       await repository.deletePatient(event.patientId);
       add(LoadPatients());
+    } catch (e) {
+      emit(PatientsOperationFailure(e.toString()));
+    }
+  }
+
+  Future<void> _onLoadPatientsChart(
+    LoadPatientsChart event,
+    Emitter<PatientState> emit,
+  ) async {
+    emit(PatientsLoadInProgress());
+    try {
+      final chartData = await repository.getPatientsChartData(year: event.year);
+      emit(PatientsLoadSuccessD(chartData));
     } catch (e) {
       emit(PatientsOperationFailure(e.toString()));
     }

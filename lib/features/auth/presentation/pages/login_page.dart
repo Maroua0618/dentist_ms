@@ -400,7 +400,7 @@ class _LoginPageState extends State<LoginPage>
                       height: 65,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
                   const Text(
                     "Dental Clinic Managment System",
                     style: TextStyle(
@@ -427,7 +427,7 @@ class _LoginPageState extends State<LoginPage>
 
               // Description
               const Text(
-                'Streamline your practice with AI-powered patient management,\nseamless scheduling, and advanced analytics.',
+                'Streamline your practice with patient management,\nseamless scheduling, and advanced analytics.',
                 style: TextStyle(
                   color: Colors.white70,
                   fontSize: 13,
@@ -444,7 +444,7 @@ class _LoginPageState extends State<LoginPage>
                     child: _buildFeatureCard(
                       icon: "assets/icons/security.svg",
                       title: 'Secure',
-                      subtitle: 'HIPAA Compliant',
+                      subtitle: 'Role-Based Access',
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -452,7 +452,7 @@ class _LoginPageState extends State<LoginPage>
                     child: _buildFeatureCard(
                       icon: "assets/icons/flash.svg",
                       title: 'Fast',
-                      subtitle: 'Cloud-Based',
+                      subtitle: 'Cloud-Based & Optimized',
                     ),
                   ),
                 ],
@@ -473,7 +473,7 @@ class _LoginPageState extends State<LoginPage>
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'Protected by enterprise-grade encryption',
+                    'Protected with secure access controls',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.5),
                       fontSize: 11,
@@ -721,6 +721,12 @@ class _LoginPageState extends State<LoginPage>
         children: [
           Column(
             children: [
+              const Icon(
+                Icons.lock_outline,
+                size: 40,
+                color: Color(0xFF00B8DB),
+              ),
+              const SizedBox(height: 8),
               const Text(
                 'Content de te revoir',
                 style: TextStyle(

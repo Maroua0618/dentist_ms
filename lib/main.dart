@@ -6,6 +6,8 @@ import 'package:dentist_ms/features/auth/data/auth_repository.dart';
 import 'package:dentist_ms/features/appointments/bloc/appointment_bloc.dart';
 import 'package:dentist_ms/features/appointments/data/appointment_remote.dart';
 import 'package:dentist_ms/features/appointments/repositories/appointment_repository.dart';
+import 'package:dentist_ms/features/settings/bloc/clinic_info_cubit.dart';
+import 'package:dentist_ms/features/settings/data/clinic_info_repository.dart';
 import 'package:dentist_ms/features/patients/bloc/patient_bloc.dart';
 import 'package:dentist_ms/features/patients/data/patient_remote.dart';
 import 'package:dentist_ms/features/patients/repositories/patient_repository.dart';
@@ -56,6 +58,7 @@ void main() async {
   final invoiceRepository = SupabaseInvoiceRepository(
     remote: invoiceRemoteDataSource,
   );
+  final clinicInfoRepository = SupabaseClinicInfoRepository(supabase);
 
   runApp(
     MultiRepositoryProvider(
@@ -63,6 +66,9 @@ void main() async {
         RepositoryProvider<AuthRepository>(create: (_) => authRepository),
         RepositoryProvider<SupabasePatientRepository>(
           create: (_) => patientRepository,
+        ),
+        RepositoryProvider<ClinicInfoRepository>(
+          create: (_) => clinicInfoRepository,
         ),
       ],
       child: MultiBlocProvider(
@@ -84,6 +90,11 @@ void main() async {
           BlocProvider<InvoiceBloc>(
             create: (context) =>
                 InvoiceBloc(repository: invoiceRepository)..add(LoadInvoices()),
+          ),
+          BlocProvider<ClinicInfoCubit>(
+            create: (context) =>
+                ClinicInfoCubit(context.read<ClinicInfoRepository>())
+                  ..loadClinicInfo(),
           ),
           // Add other Blocs here as your application grows
         ],

@@ -28,12 +28,12 @@ import 'package:dentist_ms/features/dashboard/bloc/treatments_event.dart';
 import 'package:dentist_ms/features/dashboard/bloc/performance_state.dart';
 import 'package:dentist_ms/features/dashboard/bloc/performance_event.dart';
 import 'dashboard_constants.dart';
-import 'panels/revenue_panel.dart';
-import 'panels/patients_panel.dart';
-import 'panels/treatments_panel.dart';
-import 'panels/performance_panel.dart';
-import 'widgets/metric_card.dart';
-import 'widgets/pill_tabs.dart';
+import '../panels/revenue_panel.dart';
+import '../panels/patients_panel.dart';
+import '../panels/treatments_panel.dart';
+import '../panels/performance_panel.dart';
+import '../widgets/metric_card.dart';
+import '../widgets/pill_tabs.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dentist_ms/core/constants/app_colors.dart';
-import '../dashboard_constants.dart';
+import '../pages/dashboard_constants.dart';
 
 class MetricCard extends StatelessWidget {
   const MetricCard({
