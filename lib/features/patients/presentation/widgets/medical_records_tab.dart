@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dentist_ms/core/models/app_user.dart';
 import '../tabs/allgeries_tab.dart';
 import '../tabs/dental_history_tab.dart';
 import '../tabs/prescriptions_tab.dart';
@@ -7,17 +8,19 @@ import '../tabs/upcoming_tab.dart';
 class MedicalRecordsTabs extends StatelessWidget {
   final TabController tabController;
   final Map<String, dynamic> patient;
+  final UserRole userRole;
 
   const MedicalRecordsTabs({
     super.key,
     required this.tabController,
     required this.patient,
+    required this.userRole,
   });
 
   @override
   Widget build(BuildContext context) {
     final dynamic patientIdRaw = patient['id'];
-    int?  patientInt;
+    int? patientInt;
     if (patientIdRaw != null) {
       if (patientIdRaw is int) {
         patientInt = patientIdRaw;
@@ -50,11 +53,11 @@ class MedicalRecordsTabs extends StatelessWidget {
                 size: 24,
                 color: Color(0xFF1E293B),
               ),
-              SizedBox(width:  8),
+              SizedBox(width: 8),
               Text(
                 'Dossiers médicaux',
-                style:  TextStyle(
-                  fontSize:  18,
+                style: TextStyle(
+                  fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF1E293B),
                 ),
@@ -75,15 +78,15 @@ class MedicalRecordsTabs extends StatelessWidget {
               dividerColor: Colors.transparent,
               indicator: BoxDecoration(
                 gradient: const LinearGradient(
-                  begin: Alignment. centerLeft,
-                  end:  Alignment.centerRight,
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
                   colors: [Color(0xFF2B7FFF), Color(0xFF00B8DB)],
                 ),
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius:  4,
+                    blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
                 ],
@@ -98,12 +101,7 @@ class MedicalRecordsTabs extends StatelessWidget {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
-              tabs: const [
-                Tab(text: 'Histo dentaire'),
-                Tab(text:  'Ordonnances'),
-                Tab(text: 'Allergies'),
-                Tab(text: 'À venir'),
-              ],
+              tabs: _buildTabList(),
             ),
           ),
           const SizedBox(height: 24),
@@ -112,23 +110,51 @@ class MedicalRecordsTabs extends StatelessWidget {
             child: TabBarView(
               controller: tabController,
               physics: const BouncingScrollPhysics(),
-              children: [
-                DentalHistoryTab(
-                  records: (patient['dentalHistory'] as List<dynamic>?) ?? [],
-                ),
-                PrescriptionsTab(
-                  prescriptions: (patient['prescriptions'] as List<dynamic>?) ?? [],
-                  patientName: patient['name'] ?? 'Patient inconnu',
-                ),
-                AllergiesTab(
-                  allergies:  (patient['allergies'] as List<dynamic>?) ?? [],
-                ),
-                UpcomingTab(patientId: patientInt),
-              ],
+              children: _buildTabViews(patientInt),
             ),
           ),
         ],
       ),
     );
+  }
+
+  /// Build tab list based on user role
+  /// Receptionists: Only Dental History and Upcoming tabs
+  /// Doctors & Admins: All tabs (Dental History, Prescriptions, Allergies, Upcoming)
+  List<Widget> _buildTabList() {
+    if (userRole == UserRole.receptionist) {
+      return const [Tab(text: 'Histo dentaire'), Tab(text: 'À venir')];
+    }
+
+    return const [
+      Tab(text: 'Histo dentaire'),
+      Tab(text: 'Ordonnances'),
+      Tab(text: 'Allergies'),
+      Tab(text: 'À venir'),
+    ];
+  }
+
+  /// Build tab views based on user role
+  List<Widget> _buildTabViews(int? patientInt) {
+    if (userRole == UserRole.receptionist) {
+      return [
+        DentalHistoryTab(
+          records: (patient['dentalHistory'] as List<dynamic>?) ?? [],
+        ),
+        UpcomingTab(patientId: patientInt),
+      ];
+    }
+
+    return [
+      DentalHistoryTab(
+        records: (patient['dentalHistory'] as List<dynamic>?) ?? [],
+      ),
+      PrescriptionsTab(
+        prescriptions: (patient['prescriptions'] as List<dynamic>?) ?? [],
+        patientName: patient['name'] ?? 'Patient inconnu',
+      ),
+      AllergiesTab(allergies: (patient['allergies'] as List<dynamic>?) ?? []),
+      UpcomingTab(patientId: patientInt),
+    ];
   }
 }
