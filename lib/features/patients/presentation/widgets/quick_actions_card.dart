@@ -17,17 +17,12 @@ class QuickActionsCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          begin: Alignment. topLeft,
-          end:  Alignment.bottomRight,
-          colors: [
-            Colors.white,
-            Color(0x0D8B5CF6),
-          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white, Color(0x0D8B5CF6)],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0x338B5CF6),
-        ),
+        border: Border.all(color: const Color(0x338B5CF6)),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF8B5CF6).withValues(alpha: 0.05),
@@ -41,11 +36,7 @@ class QuickActionsCard extends StatelessWidget {
         children: [
           Row(
             children: const [
-              Icon(
-                Icons.flash_on,
-                size: 24,
-                color: Color(0xFF1E293B),
-              ),
+              Icon(Icons.flash_on, size: 24, color: Color(0xFF1E293B)),
               SizedBox(width: 8),
               Text(
                 'Actions rapides',
@@ -64,13 +55,16 @@ class QuickActionsCard extends StatelessWidget {
             true,
             () => onActionTap('Add Appointment'),
           ),
-          const SizedBox(height: 10),
-          _buildActionButton(
-            'Ajouter un dossier médical',
-            Icons.note_add,
-            false,
-            () => onActionTap('Add Medical Record'),
-          ),
+          // Only doctors and admins can add medical records
+          if (userRole == UserRole.admin || userRole == UserRole.doctor) ...[
+            const SizedBox(height: 10),
+            _buildActionButton(
+              'Ajouter un dossier médical',
+              Icons.note_add,
+              false,
+              () => onActionTap('Add Medical Record'),
+            ),
+          ],
           const SizedBox(height: 10),
           _buildActionButton(
             'Modifier le profil',
@@ -102,20 +96,22 @@ class QuickActionsCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap:  onTap,
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            color: isPrimary ?  const Color(0xFF3B82F6) : Colors.white,
+            color: isPrimary ? const Color(0xFF3B82F6) : Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: isPrimary ? null : Border.all(color: const Color(0xFFE2E8F0)),
+            border: isPrimary
+                ? null
+                : Border.all(color: const Color(0xFFE2E8F0)),
             boxShadow: isPrimary
                 ? [
                     BoxShadow(
                       color: const Color(0xFF3B82F6).withValues(alpha: 0.25),
-                      blurRadius:  8,
+                      blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
                   ]
@@ -127,7 +123,9 @@ class QuickActionsCard extends StatelessWidget {
               Icon(
                 icon,
                 size: 18,
-                color: isPrimary ? const Color(0xFFFFFFFF) : const Color(0xFF1E293B),
+                color: isPrimary
+                    ? const Color(0xFFFFFFFF)
+                    : const Color(0xFF1E293B),
               ),
               const SizedBox(width: 8),
               Text(
@@ -135,7 +133,9 @@ class QuickActionsCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: isPrimary ? const Color(0xFFFFFFFF) : const Color(0xFF1E293B),
+                  color: isPrimary
+                      ? const Color(0xFFFFFFFF)
+                      : const Color(0xFF1E293B),
                 ),
               ),
             ],

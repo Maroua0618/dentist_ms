@@ -2,12 +2,15 @@ import 'dart:typed_data';
 import 'package:dentist_ms/features/patients/bloc/patient_event.dart';
 import 'package:dentist_ms/features/patients/presentation/dialogs/delete_patient_dialog.dart';
 import 'package:dentist_ms/features/patients/presentation/dialogs/edit_profile_dialoge.dart';
+import 'package:dentist_ms/features/patients/presentation/dialogs/add_medical_record_dialog.dart';
 import 'package:dentist_ms/features/patients/presentation/utils/patient_image_service.dart';
 import 'package:dentist_ms/features/patients/presentation/widgets/contact_information_card.dart';
 import 'package:dentist_ms/features/patients/presentation/widgets/medical_records_tab.dart';
 import 'package:dentist_ms/features/patients/presentation/widgets/patient_header.dart';
 import 'package:dentist_ms/features/patients/presentation/widgets/patient_stats_cards.dart';
 import 'package:dentist_ms/features/patients/presentation/widgets/quick_actions_card.dart';
+import 'package:dentist_ms/features/patients/models/patient.dart';
+import 'package:dentist_ms/features/appointments/presentation/dialogs/schedule_appointment_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dentist_ms/features/patients/bloc/patient_bloc.dart';
@@ -166,8 +169,105 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
       return;
     }
 
-    if (actionName == 'Add Appointment' || actionName == 'Add Medical Record') {
-      // Handle these actions (import required dialogs)
+    if (actionName == 'Add Appointment') {
+      // Convert patient map to Patient object for the dialog
+      final patientId = widget.patient['id'] as int?;
+      final name = widget.patient['name'] as String?;
+
+      if (patientId == null || name == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ Erreur: Données patient invalides'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Split name into first and last name
+      final nameParts = name.split(' ');
+      final firstName = nameParts.isNotEmpty ? nameParts[0] : '';
+      final lastName = nameParts.length > 1
+          ? nameParts.sublist(1).join(' ')
+          : '';
+
+      final patient = Patient(
+        id: patientId,
+        firstName: firstName,
+        lastName: lastName,
+        gender: widget.patient['gender'] as String?,
+        phone1: widget.patient['phone'] as String?,
+        email: widget.patient['email'] as String?,
+      );
+
+      showDialog(
+        context: context,
+        builder: (context) =>
+            ScheduleAppointmentDialog(preselectedPatient: patient),
+      ).then((result) {
+        if (result != null) {
+          // Refresh appointments if needed
+          context.read<AppointmentBloc>().add(LoadAppointments());
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Rendez-vous ajouté avec succès'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      });
+      return;
+    }
+
+    if (actionName == 'Add Medical Record') {
+      // Convert patient map to Patient object for the dialog
+      final patientId = widget.patient['id'] as int?;
+      final name = widget.patient['name'] as String?;
+
+      if (patientId == null || name == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ Erreur: Données patient invalides'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Split name into first and last name
+      final nameParts = name.split(' ');
+      final firstName = nameParts.isNotEmpty ? nameParts[0] : '';
+      final lastName = nameParts.length > 1
+          ? nameParts.sublist(1).join(' ')
+          : '';
+
+      final patient = Patient(
+        id: patientId,
+        firstName: firstName,
+        lastName: lastName,
+        gender: widget.patient['gender'] as String?,
+        phone1: widget.patient['phone'] as String?,
+        email: widget.patient['email'] as String?,
+      );
+
+      showDialog(
+        context: context,
+        builder: (context) =>
+            AddMedicalRecordDialog(preselectedPatient: patient),
+      ).then((result) {
+        if (result != null) {
+          // Refresh patient data to show new medical record
+          context.read<PatientBloc>().add(LoadPatients());
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Dossier médical ajouté avec succès'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      });
       return;
     }
   }

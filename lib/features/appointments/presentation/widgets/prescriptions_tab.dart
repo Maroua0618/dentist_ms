@@ -164,7 +164,7 @@ class PrescriptionsTab extends StatelessWidget {
               icon: const Icon(Icons.add, size: 18),
               label: const Text('Ajouter Ordonnance'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF10B981),
+                backgroundColor: const Color(0xFF3B82F6),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
