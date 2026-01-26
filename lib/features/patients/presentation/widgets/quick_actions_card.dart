@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:dentist_ms/core/models/app_user.dart';
 
 class QuickActionsCard extends StatelessWidget {
   final Function(String) onActionTap;
+  final UserRole userRole;
 
   const QuickActionsCard({
     super.key,
     required this.onActionTap,
+    required this.userRole,
   });
 
   @override
@@ -75,13 +78,16 @@ class QuickActionsCard extends StatelessWidget {
             false,
             () => onActionTap('Edit Profile'),
           ),
-          const SizedBox(height: 10),
-          _buildActionButton(
-            'Supprimer le patient',
-            Icons.delete_forever,
-            false,
-            () => onActionTap('Delete Patient'),
-          ),
+          // Only admins can delete patients
+          if (userRole == UserRole.admin) ...[
+            const SizedBox(height: 10),
+            _buildActionButton(
+              'Supprimer le patient',
+              Icons.delete_forever,
+              false,
+              () => onActionTap('Delete Patient'),
+            ),
+          ],
         ],
       ),
     );

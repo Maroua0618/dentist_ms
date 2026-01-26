@@ -13,6 +13,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dentist_ms/features/patients/bloc/patient_bloc.dart';
 import 'package:dentist_ms/features/patients/bloc/patient_state.dart';
 import 'package:dentist_ms/features/appointments/bloc/appointment_bloc.dart';
+import 'package:dentist_ms/features/auth/bloc/auth_bloc.dart';
+import 'package:dentist_ms/features/auth/bloc/auth_state.dart';
+import 'package:dentist_ms/core/models/app_user.dart';
 
 class PatientDetailScreen extends StatefulWidget {
   const PatientDetailScreen({
@@ -29,7 +32,7 @@ class PatientDetailScreen extends StatefulWidget {
 }
 
 class _PatientDetailScreenState extends State<PatientDetailScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late TabController _tabController;
   bool _awaitingSave = false;
   bool _awaitingDelete = false;
@@ -40,7 +43,11 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    // Initialize TabController with correct length based on user role
+    final authState = context.read<AuthBloc>().state;
+    final userRole = authState.user?.role ?? UserRole.receptionist;
+    final tabLength = userRole == UserRole.receptionist ? 2 : 4;
+    _tabController = TabController(length: tabLength, vsync: this);
     _imageService = PatientImageService();
     try {
       context.read<AppointmentBloc>().add(LoadAppointments());
@@ -183,6 +190,10 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
     final String email = widget.patient['email'] ?? 'Pas d\'email';
     final String address = widget.patient['address'] ?? 'Pas d\'adresse';
 
+    // Get current user role for access control
+    final authState = context.watch<AuthBloc>().state;
+    final userRole = authState.user?.role ?? UserRole.receptionist;
+
     return BlocListener<PatientBloc, PatientState>(
       listener: (context, state) {
         if (state is PatientsLoadSuccess && _awaitingSave) {
@@ -274,6 +285,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
                                   ),
                                   QuickActionsCard(
                                     onActionTap: _handleQuickAction,
+                                    userRole: userRole,
                                   ),
                                 ],
                               ),
@@ -285,6 +297,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
                               child: MedicalRecordsTabs(
                                 tabController: _tabController,
                                 patient: widget.patient,
+                                userRole: userRole,
                               ),
                             ),
                           ],

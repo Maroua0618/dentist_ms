@@ -129,50 +129,63 @@ class _AppNavbarState extends State<AppNavbar> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: selected ? AppColors.selectedPage : null,
-        child: Row(
-          mainAxisAlignment: _isCollapsed
-              ? MainAxisAlignment.center
-              : MainAxisAlignment.start,
-          children: [
-            SvgPicture.asset(
-              iconPath,
-              width: 24,
-              height: 24,
-              color: selected ? Colors.white : null,
-            ),
-            if (!_isCollapsed) ...[
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  title,
-                  style: AppTextStyles.body1.copyWith(
-                    color: selected ? Colors.white : null,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
+        child: ClipRect(
+          child: Row(
+            mainAxisAlignment: _isCollapsed
+                ? MainAxisAlignment.center
+                : MainAxisAlignment.start,
+            children: [
+              SvgPicture.asset(
+                iconPath,
+                width: 24,
+                height: 24,
+                color: selected ? Colors.white : null,
               ),
-              if (counter != "0")
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: selected ? Colors.white : AppColors.azure,
-                    ),
-                    borderRadius: BorderRadius.circular(50),
-                  ),
-                  child: Text(
-                    counter,
-                    style: AppTextStyles.body1.copyWith(
-                      color: selected ? Colors.white : AppColors.azure_2,
-                      fontSize: 12,
+              if (!_isCollapsed) ...[
+                const SizedBox(width: 10),
+                Expanded(
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 1),
+                    opacity: _isCollapsed ? 0.0 : 1.0,
+                    child: Text(
+                      title,
+                      style: AppTextStyles.body1.copyWith(
+                        color: selected ? Colors.white : null,
+                      ),
+                      overflow: TextOverflow.clip,
+                      maxLines: 1,
                     ),
                   ),
                 ),
+                if (counter != "0")
+                  AnimatedOpacity(
+                    duration: const Duration(milliseconds: 1),
+                    opacity: _isCollapsed ? 0.0 : 1.0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: selected ? Colors.white : AppColors.azure,
+                        ),
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                      child: Text(
+                        counter,
+                        style: AppTextStyles.body1.copyWith(
+                          color: selected ? Colors.white : AppColors.azure_2,
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.clip,
+                        maxLines: 1,
+                      ),
+                    ),
+                  ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -191,7 +204,10 @@ class _AppNavbarState extends State<AppNavbar> {
       borderRadius: BorderRadius.circular(14),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        padding: EdgeInsets.symmetric(
+          vertical: 10,
+          horizontal: _isCollapsed ? 12 : 16,
+        ),
         decoration: selected
             ? BoxDecoration(
                 color: AppColors.white.withValues(alpha: 0.1),
@@ -199,76 +215,88 @@ class _AppNavbarState extends State<AppNavbar> {
                 borderRadius: BorderRadius.circular(14),
               )
             : null,
-        child: Row(
-          children: [
-            // Avatar with profile image
-            FutureBuilder<Uint8List?>(
-              future: _loadProfileImage(user.profileImageUrl),
-              builder: (context, snapshot) {
-                return CircleAvatar(
-                  radius: 16,
-                  backgroundColor: const Color(0xFF4F7EFF),
-                  backgroundImage: snapshot.hasData && snapshot.data != null
-                      ? MemoryImage(snapshot.data!)
-                      : null,
-                  child: snapshot.hasData && snapshot.data != null
-                      ? null
-                      : Text(
-                          user.firstName.isNotEmpty
-                              ? user.firstName[0].toUpperCase()
-                              : 'U',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
+        child: ClipRect(
+          child: Row(
+            mainAxisAlignment: _isCollapsed
+                ? MainAxisAlignment.center
+                : MainAxisAlignment.start,
+            children: [
+              // Avatar with profile image
+              FutureBuilder<Uint8List?>(
+                future: _loadProfileImage(user.profileImageUrl),
+                builder: (context, snapshot) {
+                  return CircleAvatar(
+                    radius: 16,
+                    backgroundColor: const Color(0xFF4F7EFF),
+                    backgroundImage: snapshot.hasData && snapshot.data != null
+                        ? MemoryImage(snapshot.data!)
+                        : null,
+                    child: snapshot.hasData && snapshot.data != null
+                        ? null
+                        : Text(
+                            user.firstName.isNotEmpty
+                                ? user.firstName[0].toUpperCase()
+                                : 'U',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
                           ),
+                  );
+                },
+              ),
+
+              if (!_isCollapsed) ...[
+                const SizedBox(width: 10),
+                Expanded(
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 1),
+                    opacity: _isCollapsed ? 0.0 : 1.0,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user.fullName,
+                          style: AppTextStyles.body1.copyWith(
+                            color: selected ? Colors.white : null,
+                            fontSize: 13,
+                          ),
+                          overflow: TextOverflow.clip,
+                          maxLines: 1,
                         ),
-                );
-              },
-            ),
-
-            if (!_isCollapsed) ...[
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user.fullName,
-                      style: AppTextStyles.body1.copyWith(
-                        color: selected ? Colors.white : null,
-                        fontSize: 13,
-                      ),
-                      overflow: TextOverflow.ellipsis,
+                        Text(
+                          user.role.name.toUpperCase(),
+                          style: TextStyle(
+                            color: selected
+                                ? Colors.white.withValues(alpha: 0.7)
+                                : Colors.grey,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.clip,
+                          maxLines: 1,
+                        ),
+                      ],
                     ),
-                    Text(
-                      user.role.name.toUpperCase(),
-                      style: TextStyle(
-                        color: selected
-                            ? Colors.white.withValues(alpha: 0.7)
-                            : Colors.grey,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
 
-              // Logout icon button
-              IconButton(
-                icon: const Icon(
-                  Icons.logout,
-                  size: 18,
-                  color: Color(0xFFDC2626),
+                // Logout icon button
+                IconButton(
+                  icon: const Icon(
+                    Icons.logout,
+                    size: 18,
+                    color: Color(0xFFDC2626),
+                  ),
+                  onPressed: _showSignOutDialog,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  tooltip: 'Déconnexion',
                 ),
-                onPressed: _showSignOutDialog,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                tooltip: 'Déconnexion',
-              ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -319,6 +347,7 @@ class _AppNavbarState extends State<AppNavbar> {
             duration: const Duration(milliseconds: 250),
             width: _isCollapsed ? 80 : expandedWidth,
             decoration: AppColors.navBarBackground,
+            clipBehavior: Clip.hardEdge,
             child: Column(
               crossAxisAlignment: _isCollapsed
                   ? CrossAxisAlignment.center
@@ -333,74 +362,85 @@ class _AppNavbarState extends State<AppNavbar> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (!_isCollapsed) ...[
-                          Container(
-                            decoration: AppColors.selectedPage.copyWith(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            padding: const EdgeInsets.all(4),
-                            child: SvgPicture.asset(
-                              "assets/images/dms.svg",
-                              width: 35,
-                              height: 35,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  clinicName,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                const Text(
-                                  'Clinic Management',
-                                  style: TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 12,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                        Container(
-                          decoration: _isCollapsed
-                              ? BoxDecoration(
-                                  border: Border.all(color: AppColors.azure),
-                                  borderRadius: BorderRadius.circular(10),
-                                )
-                              : null,
-                          child: IconButton(
-                            icon: AnimatedRotation(
-                              duration: const Duration(milliseconds: 200),
-                              turns: _isCollapsed ? 0.5 : 0,
-                              child: const Icon(
-                                Icons.chevron_left,
-                                size: 28,
+                    child: ClipRect(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (!_isCollapsed) ...[
+                            Container(
+                              decoration: AppColors.selectedPage.copyWith(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: SvgPicture.asset(
+                                "assets/images/dms.svg",
+                                width: 35,
+                                height: 35,
                                 color: Colors.white,
                               ),
                             ),
-                            onPressed: () {
-                              setState(() {
-                                _isCollapsed = !_isCollapsed;
-                              });
-                            },
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: AnimatedOpacity(
+                                duration: const Duration(milliseconds: 1),
+                                opacity: _isCollapsed ? 0.0 : 1.0,
+                                child: ClipRect(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        clinicName,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        overflow: TextOverflow.clip,
+                                        maxLines: 1,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      const Text(
+                                        'Clinic Management',
+                                        style: TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 12,
+                                        ),
+                                        overflow: TextOverflow.clip,
+                                        maxLines: 1,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                          Container(
+                            decoration: _isCollapsed
+                                ? BoxDecoration(
+                                    border: Border.all(color: AppColors.azure),
+                                    borderRadius: BorderRadius.circular(10),
+                                  )
+                                : null,
+                            child: IconButton(
+                              icon: AnimatedRotation(
+                                duration: const Duration(milliseconds: 200),
+                                turns: _isCollapsed ? 0.5 : 0,
+                                child: const Icon(
+                                  Icons.chevron_left,
+                                  size: 28,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _isCollapsed = !_isCollapsed;
+                                });
+                              },
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

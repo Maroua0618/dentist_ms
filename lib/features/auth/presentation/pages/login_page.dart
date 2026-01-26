@@ -401,12 +401,14 @@ class _LoginPageState extends State<LoginPage>
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Text(
-                    "Dental Clinic Managment System",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: const Text(
+                      "Système de Gestion de Clinique Dentaire",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
@@ -416,7 +418,7 @@ class _LoginPageState extends State<LoginPage>
 
               // Heading
               const Text(
-                'Next-Generation Dental\nPractice Management',
+                'Gestion de Cabinet Dentaire\nNouvelle Génération',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 28,
@@ -427,7 +429,7 @@ class _LoginPageState extends State<LoginPage>
 
               // Description
               const Text(
-                'Streamline your practice with patient management,\nseamless scheduling, and advanced analytics.',
+                'Rationalisez votre cabinet avec la gestion des patients,\nla planification fluide et l\'analyse avancée.',
                 style: TextStyle(
                   color: Colors.white70,
                   fontSize: 13,
@@ -443,16 +445,16 @@ class _LoginPageState extends State<LoginPage>
                   Expanded(
                     child: _buildFeatureCard(
                       icon: "assets/icons/security.svg",
-                      title: 'Secure',
-                      subtitle: 'Role-Based Access',
+                      title: 'Sécurisé',
+                      subtitle: 'Accès Basé sur les Rôles',
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: _buildFeatureCard(
                       icon: "assets/icons/flash.svg",
-                      title: 'Fast',
-                      subtitle: 'Cloud-Based & Optimized',
+                      title: 'Rapide',
+                      subtitle: 'Basé sur le Cloud & Optimisé',
                     ),
                   ),
                 ],
@@ -473,7 +475,7 @@ class _LoginPageState extends State<LoginPage>
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'Protected with secure access controls',
+                    'Protégé par des contrôles d\'accès sécurisés',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.5),
                       fontSize: 11,
@@ -506,14 +508,12 @@ class _LoginPageState extends State<LoginPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SvgPicture.asset(
-            icon,
-            width: 28,
-            height: 28,
-            colorFilter: const ColorFilter.mode(
-              Color(0xFF00B8DB),
-              BlendMode.srcIn,
+          ShaderMask(
+            shaderCallback: (bounds) => AppColors.primaryGradient.createShader(
+              Rect.fromLTWH(0, 0, bounds.width, bounds.height),
             ),
+            blendMode: BlendMode.srcIn,
+            child: SvgPicture.asset(icon, width: 28, height: 28),
           ),
           const SizedBox(height: 12),
           Text(
