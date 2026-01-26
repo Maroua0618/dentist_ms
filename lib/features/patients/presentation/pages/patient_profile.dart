@@ -14,7 +14,6 @@ import 'package:dentist_ms/features/patients/bloc/patient_bloc.dart';
 import 'package:dentist_ms/features/patients/bloc/patient_state.dart';
 import 'package:dentist_ms/features/appointments/bloc/appointment_bloc.dart';
 import 'package:dentist_ms/features/auth/bloc/auth_bloc.dart';
-import 'package:dentist_ms/features/auth/bloc/auth_state.dart';
 import 'package:dentist_ms/core/models/app_user.dart';
 
 class PatientDetailScreen extends StatefulWidget {
