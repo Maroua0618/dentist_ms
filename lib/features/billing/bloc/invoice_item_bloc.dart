@@ -5,6 +5,7 @@ import 'package:dentist_ms/features/billing/repositories/invoice_item_repository
 import 'package:dentist_ms/features/billing/repositories/payment_repository.dart';
 import 'package:dentist_ms/features/billing/data/invoice_remote.dart';
 import 'package:dentist_ms/features/billing/data/payment_remote.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 
 class InvoiceItemBloc extends Bloc<InvoiceItemEvent, InvoiceItemState> {
   final InvoiceItemRepository repository;
@@ -23,7 +24,8 @@ class InvoiceItemBloc extends Bloc<InvoiceItemEvent, InvoiceItemState> {
     on<LoadInvoiceItems>(_onLoadInvoiceItems);
     on<LoadInvoiceItemsByInvoice>(_onLoadInvoiceItemsByInvoice);
     on<LoadInvoiceItemById>(_onLoadInvoiceItemById);
-    on<AddInvoiceItem>(_onAddInvoiceItem);
+    // Use droppable transformer to prevent duplicate add events
+    on<AddInvoiceItem>(_onAddInvoiceItem, transformer: droppable());
     on<UpdateInvoiceItem>(_onUpdateInvoiceItem);
     on<DeleteInvoiceItem>(_onDeleteInvoiceItem);
   }
@@ -48,7 +50,9 @@ class InvoiceItemBloc extends Bloc<InvoiceItemEvent, InvoiceItemState> {
       final total = subtotal - discount;
 
       // Get all payments to determine status
-      final payments = await paymentRepository.getPaymentsByInvoiceId(invoiceId);
+      final payments = await paymentRepository.getPaymentsByInvoiceId(
+        invoiceId,
+      );
       final totalPaid = payments.fold<double>(
         0.0,
         (sum, payment) => sum + (payment.amount ?? 0.0),
@@ -122,21 +126,22 @@ class InvoiceItemBloc extends Bloc<InvoiceItemEvent, InvoiceItemState> {
     AddInvoiceItem event,
     Emitter<InvoiceItemState> emit,
   ) async {
-    emit(InvoiceItemsLoadInProgress());
     try {
+      // Create the item and reload list in parallel for faster response
       await repository.createInvoiceItem(event.item);
 
-      // Recalculate invoice totals and update status in one operation
-      if (event.item.invoiceId != null) {
-        await _recalculateInvoiceTotalsAndStatus(event.item.invoiceId!);
-      }
-
-      // Reload the list for the specific invoice
+      // Immediately reload the list to show the new item
       if (event.item.invoiceId != null) {
         final items = await repository.getInvoiceItemsByInvoiceId(
           event.item.invoiceId!,
         );
         emit(InvoiceItemsLoadSuccess(items));
+
+        // Recalculate totals asynchronously (don't wait for it)
+        // This happens in the background and invoice will update via listener
+        _recalculateInvoiceTotalsAndStatus(
+          event.item.invoiceId!,
+        ).catchError((e) => print('Warning: Failed to recalculate totals: $e'));
       } else {
         final items = await repository.getAllInvoiceItems();
         emit(InvoiceItemsLoadSuccess(items));
@@ -150,8 +155,8 @@ class InvoiceItemBloc extends Bloc<InvoiceItemEvent, InvoiceItemState> {
     UpdateInvoiceItem event,
     Emitter<InvoiceItemState> emit,
   ) async {
-    emit(InvoiceItemsLoadInProgress());
     try {
+      // Don't emit loading state to prevent triggering listeners prematurely
       await repository.updateInvoiceItem(event.item);
 
       // Recalculate invoice totals and update status in one operation
@@ -178,8 +183,8 @@ class InvoiceItemBloc extends Bloc<InvoiceItemEvent, InvoiceItemState> {
     DeleteInvoiceItem event,
     Emitter<InvoiceItemState> emit,
   ) async {
-    emit(InvoiceItemsLoadInProgress());
     try {
+      // Don't emit loading state to prevent triggering listeners prematurely
       // Get the item first to know which invoice to recalculate
       final item = await repository.getInvoiceItemById(event.itemId);
       final invoiceId = item.invoiceId;

@@ -1,18 +1,26 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:dentist_ms/core/models/app_user.dart';
 
-/// A standalone, responsive dialog widget for Face Recognition success.
-/// Compact version designed to fit without scrolling on most screens.
+/// Dialog widget for Face Recognition success or failure
 class FaceRecognitionOverlay extends StatelessWidget {
   final VoidCallback onClose;
-  final VoidCallback onContinue;
-  final VoidCallback onTryAgain;
+  final VoidCallback? onContinue;
+  final VoidCallback? onTryAgain;
+  final AppUser? recognizedUser;
+  final double? confidence;
+  final bool isSuccess;
+  final String? errorMessage;
 
   const FaceRecognitionOverlay({
     super.key,
     required this.onClose,
-    required this.onContinue,
-    required this.onTryAgain,
+    this.onContinue,
+    this.onTryAgain,
+    this.recognizedUser,
+    this.confidence,
+    this.isSuccess = false,
+    this.errorMessage,
   });
 
   @override
@@ -21,7 +29,7 @@ class FaceRecognitionOverlay extends StatelessWidget {
 
     return Stack(
       children: [
-        // 1. Dimmed Background with Blur
+        // Dimmed Background with Blur
         GestureDetector(
           onTap: onClose,
           child: Container(
@@ -35,15 +43,12 @@ class FaceRecognitionOverlay extends StatelessWidget {
           ),
         ),
 
-        // 2. The Dialog Content
+        // Dialog Content
         Center(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: 400, // Slightly narrower for better proportions
-                minWidth: 300,
-              ),
+              constraints: const BoxConstraints(maxWidth: 400, minWidth: 300),
               child: Container(
                 margin: const EdgeInsets.symmetric(
                   horizontal: 24,
@@ -71,24 +76,22 @@ class FaceRecognitionOverlay extends StatelessWidget {
                     _buildHeader(),
 
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        32,
-                        0,
-                        32,
-                        32,
-                      ), // Reduced outer padding
+                      padding: const EdgeInsets.fromLTRB(32, 24, 32, 32),
                       child: Column(
                         children: [
-                          const _ProfileSection(),
-                          const SizedBox(height: 16), // Reduced spacing
-                          const _StatusBadge(),
-                          const SizedBox(height: 16), // Reduced spacing
-                          const _UserInfo(),
-                          const SizedBox(height: 24), // Reduced spacing
-                          _ActionButtons(
-                            onContinue: onContinue,
-                            onTryAgain: onTryAgain,
-                          ),
+                          _buildStatusIcon(),
+                          const SizedBox(height: 20),
+                          if (isSuccess) ...[
+                            _buildProfileSection(),
+                            const SizedBox(height: 16),
+                            _buildUserInfo(),
+                            const SizedBox(height: 16),
+                            _buildConfidenceBadge(),
+                          ] else ...[
+                            _buildErrorMessage(),
+                          ],
+                          const SizedBox(height: 24),
+                          _buildActionButtons(),
                         ],
                       ),
                     ),
@@ -103,223 +106,227 @@ class FaceRecognitionOverlay extends StatelessWidget {
   }
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isSuccess
+              ? [const Color(0xFF10B981), const Color(0xFF059669)]
+              : [const Color(0xFFEF4444), const Color(0xFFDC2626)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: IconButton(
-              onPressed: onClose,
-              icon: const Icon(Icons.close, color: Colors.white54, size: 20),
-              splashRadius: 20,
-              tooltip: "Close",
-            ),
+          Row(
+            children: [
+              Icon(
+                isSuccess ? Icons.check_circle : Icons.error,
+                color: Colors.white,
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                isSuccess ? 'Reconnaisance Réussie' : 'Échec',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          IconButton(
+            onPressed: onClose,
+            icon: const Icon(Icons.close, color: Colors.white),
           ),
         ],
       ),
     );
   }
-}
 
-/// Sub-widget for the Profile Image and Checkmark
-class _ProfileSection extends StatelessWidget {
-  const _ProfileSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // Main Avatar - Reduced size
-        Container(
-          width: 100, // Reduced from 140
-          height: 100, // Reduced from 140
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFF00D9A3), width: 3),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF00D9A3).withValues(alpha: 0.2),
-                blurRadius: 20,
-                spreadRadius: 2,
-              ),
-            ],
-            image: const DecorationImage(
-              image: AssetImage("assets/images/pfp.png"),
-              fit: BoxFit.cover,
+  Widget _buildStatusIcon() {
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 500),
+      tween: Tween(begin: 0.0, end: 1.0),
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: value,
+          child: Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isSuccess
+                  ? const Color(0xFF10B981).withValues(alpha: 0.2)
+                  : const Color(0xFFEF4444).withValues(alpha: 0.2),
+            ),
+            child: Icon(
+              isSuccess ? Icons.face : Icons.face_retouching_off,
+              size: 50,
+              color: isSuccess
+                  ? const Color(0xFF10B981)
+                  : const Color(0xFFEF4444),
             ),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildProfileSection() {
+    if (recognizedUser == null) return const SizedBox.shrink();
+
+    return Column(
+      children: [
+        CircleAvatar(
+          radius: 50,
+          backgroundColor: Colors.grey.shade800,
+          backgroundImage: recognizedUser!.profileImageUrl != null
+              ? NetworkImage(recognizedUser!.profileImageUrl!)
+              : null,
+          child: recognizedUser!.profileImageUrl == null
+              ? Text(
+                  recognizedUser!.firstName[0] + recognizedUser!.lastName[0],
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              : null,
         ),
-        // Success Indicator - Adjusted for new size
-        Positioned(
-          bottom: 0,
-          right: 0,
-          child: Container(
-            width: 32, // Reduced from 42
-            height: 32,
-            decoration: BoxDecoration(
-              color: const Color(0xFF00D9A3),
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFF1A2332), width: 3),
+      ],
+    );
+  }
+
+  Widget _buildUserInfo() {
+    if (recognizedUser == null) return const SizedBox.shrink();
+
+    return Column(
+      children: [
+        Text(
+          '${recognizedUser!.firstName} ${recognizedUser!.lastName}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFF3B82F6).withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            recognizedUser!.role.toString().split('.').last.toUpperCase(),
+            style: const TextStyle(
+              color: Color(0xFF3B82F6),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
-            child: const Icon(Icons.check, color: Colors.white, size: 18),
           ),
         ),
       ],
     );
   }
-}
 
-/// Sub-widget for the "Face Recognized" Badge
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge();
+  Widget _buildConfidenceBadge() {
+    if (confidence == null) return const SizedBox.shrink();
 
-  @override
-  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF00D9A3).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(
-          color: const Color(0xFF00D9A3).withValues(alpha: 0.3),
-        ),
+        color: Colors.green.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.face_retouching_natural,
-            color: Color(0xFF00D9A3),
-            size: 16,
-          ),
-          SizedBox(width: 8),
+          const Icon(Icons.verified_user, color: Colors.green, size: 16),
+          const SizedBox(width: 8),
           Text(
-            'Face Recognized',
-            style: TextStyle(
-              color: Color(0xFF00D9A3),
+            'Confiance: ${(confidence! * 100).toStringAsFixed(0)}%',
+            style: const TextStyle(
+              color: Colors.green,
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
             ),
           ),
         ],
       ),
     );
   }
-}
 
-/// Sub-widget for User Name and Role
-class _UserInfo extends StatelessWidget {
-  const _UserInfo();
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildErrorMessage() {
     return Column(
       children: [
-        const Text(
-          'Dr. Emily Rodriguez',
+        Text(
+          errorMessage ?? 'Visage non reconnu',
+          style: const TextStyle(
+            color: Colors.red,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
           textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 22, // Slightly smaller
-            fontWeight: FontWeight.bold,
-            letterSpacing: -0.5,
-          ),
         ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: const Color(0xFF4F7EFF).withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: const Text(
-            'emily.rodriguez@dentalcare.com',
-            style: TextStyle(
-              color: Color(0xFF7EA2FF),
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
-          ),
-        )
+        const SizedBox(height: 12),
+        const Text(
+          'Veuillez réessayer ou utiliser une autre méthode de connexion.',
+          style: TextStyle(color: Colors.grey, fontSize: 13),
+          textAlign: TextAlign.center,
+        ),
       ],
     );
   }
-}
 
-/// Sub-widget for Buttons
-class _ActionButtons extends StatelessWidget {
-  final VoidCallback onContinue;
-  final VoidCallback onTryAgain;
-
-  const _ActionButtons({required this.onContinue, required this.onTryAgain});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Gradient Button
-        Container(
-          width: double.infinity,
-          height: 44, // Reduced height
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            gradient: const LinearGradient(
-              colors: [Color(0xFF4F7EFF), Color(0xFF9D6CFF)],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF4F7EFF).withValues(alpha: 0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onContinue,
+  Widget _buildActionButtons() {
+    if (isSuccess) {
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: onContinue,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF10B981),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              child: const Center(
-                child: Text(
-                  'Continue as Emily',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
             ),
           ),
-        ),
-
-        const SizedBox(height: 12),
-
-        // Outlined Button
-        SizedBox(
-          width: double.infinity,
-          height: 44, // Reduced height
-          child: TextButton(
-            onPressed: onTryAgain,
-            style: TextButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-              ),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text(
-              'Not you? Try again',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-            ),
+          child: const Text(
+            'Continuer',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
         ),
-      ],
+      );
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: onTryAgain,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF3B82F6),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: const Text(
+          'Réessayer',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+      ),
     );
   }
 }

@@ -59,9 +59,15 @@ class InvoiceItemRemoteDataSource {
   /// Add a new invoice item
   Future<InvoiceItem> addInvoiceItem(InvoiceItem item) async {
     try {
+      // Get the JSON representation
+      final json = item.toJson();
+
+      // Extra safety: Ensure 'id' is NEVER included in inserts
+      json.remove('id');
+
       final response = await _client
           .from('invoice_items')
-          .insert(item.toJson())
+          .insert(json)
           .select('*, treatments(name)')
           .single();
 

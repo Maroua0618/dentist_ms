@@ -42,6 +42,7 @@ class _AppointmentPageState extends State<AppointmentPage> {
           .eq('role', 'doctor')
           .order('first_name');
 
+      if (!mounted) return;
       setState(() {
         doctors = List<Map<String, dynamic>>.from(doctorResp);
       });
@@ -59,6 +60,7 @@ class _AppointmentPageState extends State<AppointmentPage> {
         final role = userResp['role'] as String;
         final userId = userResp['id'] as int;
 
+        if (!mounted) return;
         setState(() {
           isDoctor = role == 'doctor';
           if (isDoctor) {

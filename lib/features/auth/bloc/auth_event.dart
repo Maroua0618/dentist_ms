@@ -40,9 +40,18 @@ class AuthUserChanged extends AuthEvent {
 
 class AuthUpdateProfile extends AuthEvent {
   final AppUser user;
-  
+
   AuthUpdateProfile(this.user);
-  
+
   @override
   List<Object?> get props => [user];
+}
+
+class AuthFaceLoginRequested extends AuthEvent {
+  final List<double> faceEmbedding;
+
+  AuthFaceLoginRequested(this.faceEmbedding);
+
+  @override
+  List<Object?> get props => [faceEmbedding];
 }

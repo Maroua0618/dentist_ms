@@ -55,6 +55,8 @@ class InvoiceDetailScreen extends StatefulWidget {
 }
 
 class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
+  bool _isAddingItem = false;
+
   @override
   void initState() {
     super.initState();
@@ -84,29 +86,23 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
           style: AppTextStyles.headline2.copyWith(color: AppColors.textPrimary),
         ),
       ),
-      body: MultiBlocListener(
-        listeners: [
-          BlocListener<InvoiceItemBloc, InvoiceItemState>(
-            listener: (context, state) {
-              // Reload invoice whenever invoice items change to get updated totals
-              if (state is InvoiceItemsLoadSuccess) {
-                context.read<InvoiceBloc>().add(
-                  LoadInvoiceById(widget.invoiceId),
-                );
-              }
-            },
-          ),
-          BlocListener<InvoiceBloc, InvoiceState>(
-            listener: (context, state) {
-              if (state is InvoicesLoadSuccess) {
-                // After update, reload the specific invoice
-                context.read<InvoiceBloc>().add(
-                  LoadInvoiceById(widget.invoiceId),
-                );
-              }
-            },
-          ),
-        ],
+      body: BlocListener<InvoiceItemBloc, InvoiceItemState>(
+        listener: (context, state) {
+          // Just reset the flag - don't reload invoice to avoid jarring refresh
+          if (state is InvoiceItemsLoadSuccess) {
+            if (_isAddingItem) {
+              setState(() {
+                _isAddingItem = false;
+              });
+            }
+          } else if (state is InvoiceItemsOperationFailure) {
+            if (_isAddingItem) {
+              setState(() {
+                _isAddingItem = false;
+              });
+            }
+          }
+        },
         child: BlocBuilder<InvoiceBloc, InvoiceState>(
           builder: (context, invoiceState) {
             if (invoiceState is InvoicesLoadInProgress) {
@@ -586,12 +582,20 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
   }
 
   void _showAddItemDialog(Invoice invoice) async {
+    // Prevent multiple simultaneous submissions
+    if (_isAddingItem) return;
+
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => AddInvoiceItemDialog(invoiceId: invoice.id!),
     );
 
     if (result != null && mounted) {
+      // Set flag to prevent duplicate submissions
+      setState(() {
+        _isAddingItem = true;
+      });
+
       final item = InvoiceItem(
         invoiceId: invoice.id,
         treatmentId: result['treatmentId'],
@@ -603,7 +607,10 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
       );
 
       context.read<InvoiceItemBloc>().add(AddInvoiceItem(item));
-      // Invoice will be automatically reloaded via BlocListener when item is added
+
+      // Don't reset the flag here - let the BLoC listener handle it
+      // This prevents race conditions where the flag is reset before DB operation completes
+      // Invoice will be automatically reloaded via BLocListener when item is added
     }
   }
 
