@@ -76,9 +76,10 @@ class InvoiceBloc extends Bloc<InvoiceEvent, InvoiceState> {
     emit(InvoicesLoadInProgress());
     try {
       await repository.updateInvoice(event.invoice);
-      // Reload the list directly instead of dispatching another event
-      final invoices = await repository.getAllInvoices();
-      emit(InvoicesLoadSuccess(invoices));
+
+      // Reload the updated invoice
+      final updatedInvoice = await repository.getInvoiceById(event.invoice.id!);
+      emit(InvoiceLoadSuccess(updatedInvoice));
     } catch (e) {
       emit(InvoicesOperationFailure(e.toString()));
     }

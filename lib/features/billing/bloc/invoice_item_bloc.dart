@@ -127,21 +127,19 @@ class InvoiceItemBloc extends Bloc<InvoiceItemEvent, InvoiceItemState> {
     Emitter<InvoiceItemState> emit,
   ) async {
     try {
-      // Create the item and reload list in parallel for faster response
+      // Create the item
       await repository.createInvoiceItem(event.item);
 
-      // Immediately reload the list to show the new item
+      // Recalculate totals BEFORE reloading the list
+      // This ensures the invoice totals are updated synchronously
       if (event.item.invoiceId != null) {
+        await _recalculateInvoiceTotalsAndStatus(event.item.invoiceId!);
+
+        // Now reload the list with updated totals
         final items = await repository.getInvoiceItemsByInvoiceId(
           event.item.invoiceId!,
         );
         emit(InvoiceItemsLoadSuccess(items));
-
-        // Recalculate totals asynchronously (don't wait for it)
-        // This happens in the background and invoice will update via listener
-        _recalculateInvoiceTotalsAndStatus(
-          event.item.invoiceId!,
-        ).catchError((e) => print('Warning: Failed to recalculate totals: $e'));
       } else {
         final items = await repository.getAllInvoiceItems();
         emit(InvoiceItemsLoadSuccess(items));
