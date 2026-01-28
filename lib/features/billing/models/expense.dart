@@ -61,10 +61,7 @@ class Expense extends Equatable {
       'created_by_user_id': createdByUserId,
     };
 
-    if (id != null) {
-      data['id'] = id;
-    }
-
+    // Exclude `id` field entirely for insertion
     return data;
   }
 

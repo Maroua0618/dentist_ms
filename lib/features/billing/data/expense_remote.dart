@@ -39,9 +39,13 @@ class ExpenseRemoteDataSource {
   /// Add a new expense
   Future<Expense> addExpense(Expense expense) async {
     try {
+      // Remove the `id` field from the payload to allow auto-generation
+      final expenseData = expense.toJson();
+      expenseData.remove('id');
+
       final response = await _client
           .from('expenses')
-          .insert(expense.toJson())
+          .insert(expenseData)
           .select()
           .single();
 
